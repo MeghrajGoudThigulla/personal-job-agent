@@ -2,13 +2,9 @@ services:
   - type: web
     name: personal-job-agent
     runtime: docker
-    plan: starter
+    plan: free
     region: oregon
     healthCheckPath: /health
-    disk:
-      name: job-agent-data
-      mountPath: /app/data
-      sizeGB: 1
     envVars:
       - key: PORT
         value: 8000
@@ -21,7 +17,7 @@ services:
       - key: AUTO_TAILOR_HIGH_MATCH
         value: "true"
       - key: LLM_PROVIDER
-        value: groq
+        value: auto
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL
@@ -33,6 +29,4 @@ services:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHAT_ID
-        sync: false
-      - key: DISCORD_WEBHOOK_URL
         sync: false

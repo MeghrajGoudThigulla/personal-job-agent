@@ -164,27 +164,52 @@ docker run -p 8000:8000 --env-file .env -v $(pwd)/data:/app/data personal-job-ag
 
 ---
 
-## ☁️ Deploying to Render
+## ☁️ 100% Free Deployment Options
 
-This application is fully optimized for **Render**:
-- Native `render.yaml` Blueprint for one-click setup.
-- Containerized environment (`runtime: docker`) with TeX Live included.
-- Persistent disk mount (`/app/data`) ensuring the SQLite database and tailored resumes survive deploys.
-- Health check configured on `/health`.
+You do **not** need a paid Render account. The project supports three 100% free hosting paths:
 
-### Deployment Steps:
-1. Push your code to your GitHub repo (`https://github.com/MeghrajGoudThigulla/personal-job-agent.git`).
-2. Log in to [Render](https://render.com).
-3. Click **New +** -> **Blueprint**.
-4. Connect the repository `MeghrajGoudThigulla/personal-job-agent`.
-5. Render will automatically detect `render.yaml`.
-6. Add your secret environment variables in the Render dashboard:
+### Option A: Render Free Tier ($0/month, No Credit Card Required)
+The `render.yaml` blueprint is configured for **Render's Free Tier** (`plan: free`).
+
+1. Log in to [Render](https://render.com).
+2. Click **New +** -> **Blueprint**.
+3. Select `MeghrajGoudThigulla/personal-job-agent`.
+4. Render will read `render.yaml` and set it up as a **Free Web Service**.
+5. Set your secret environment variables:
    - `GROQ_API_KEY`
    - `NVIDIA_NIM_API_KEY`
    - `TELEGRAM_BOT_TOKEN`
    - `TELEGRAM_CHAT_ID`
-   - `DISCORD_WEBHOOK_URL`
-7. Click **Apply Blueprint**! Render will build the Docker container and start your background job hunter.
+6. Click **Apply Blueprint**!
+7. *(Optional Tip)*: Render's free tier sleeps after 15 minutes of inactivity. To keep your job hunter running continuously 24/7 for free:
+   - Create a free account on [cron-job.org](https://cron-job.org) or [UptimeRobot](https://uptimerobot.com).
+   - Set up a free monitor to ping your Render URL's `/health` endpoint every 10 minutes (e.g. `https://personal-job-agent.onrender.com/health`).
+
+---
+
+### Option B: Run 24/7 in Background on Your Local Linux Machine ($0)
+Since you are on Linux, you can run the agent locally in the background without needing cloud hosting:
+
+#### 1-Click Background Start:
+```bash
+./scripts/start_local.sh
+```
+This runs the agent in the background, logs output to `app.log`, and keeps it running even when you close the terminal.
+
+#### Auto-Start on Boot (Systemd User Service):
+```bash
+mkdir -p ~/.config/systemd/user
+cp scripts/personal-job-agent.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now personal-job-agent
+```
+The agent will automatically start whenever your machine is powered on.
+
+---
+
+### Option C: Koyeb / Hugging Face Spaces (Free Cloud Alternatives)
+- **Koyeb Free Tier**: Supports Docker containers with 512MB RAM and does not spin down.
+- **Hugging Face Spaces**: Select **Docker** space (100% free, 16GB RAM, 2 vCPUs, never sleeps). Connect your GitHub repo and it runs 24/7.
 
 ---
 

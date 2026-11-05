@@ -1,0 +1,15 @@
+[Unit]
+Description=Personal Job Agent - Autonomous Job Scout & Tailoring
+After=network.target
+
+[Service]
+Type=simple
+User=thigulla-meghraj-goud
+WorkingDirectory=/home/thigulla-meghraj-goud/dev/job-applications
+ExecStart=/home/thigulla-meghraj-goud/dev/job-applications/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=10
+EnvironmentFile=/home/thigulla-meghraj-goud/dev/job-applications/.env
+
+[Install]
+WantedBy=default.target
