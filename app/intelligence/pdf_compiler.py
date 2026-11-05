@@ -1,9 +1,10 @@
 import os
+import re
 import shutil
 import subprocess
 import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from app.config import settings
 
 logger = logging.getLogger("personal_job_agent.pdf")
@@ -12,6 +13,7 @@ class PDFCompiler:
     """
     Compiles LaTeX resumes into clean PDF documents using XeLaTeX or pdfLaTeX.
     Provides fallback to clean HTML-printable format if TeX Live is absent.
+    Ensures clear, professional file naming without any ambiguity.
     """
 
     def __init__(self, output_dir: Path = None):
@@ -22,11 +24,35 @@ class PDFCompiler:
         if cls_src.exists():
             shutil.copy(cls_src, self.output_dir / "resume.cls")
 
-    def compile_resume(self, job_id: int, company_slug: str, latex_content: str) -> Dict[str, Any]:
+    def format_filename_base(self, company: str, role_title: str = "", job_id: Optional[int] = None) -> str:
         """
-        Saves LaTeX and attempts compilation to PDF.
+        Creates an unambiguous, professional filename for recruiters and ATS:
+        e.g., 'Thigulla_Meghraj_Goud_Resume_Linear_Backend_Engineer'
         """
-        filename_base = f"Meghraj_Goud_{company_slug}_{job_id}"
+        clean_company = re.sub(r'[^a-zA-Z0-9]+', '_', company).strip('_')[:25]
+        clean_role = re.sub(r'[^a-zA-Z0-9]+', '_', role_title).strip('_')[:35]
+
+        parts = ["Thigulla_Meghraj_Goud_Resume"]
+        if clean_company:
+            parts.append(clean_company)
+        if clean_role:
+            parts.append(clean_role)
+        if job_id is not None:
+            parts.append(str(job_id))
+
+        return "_".join(parts)
+
+    def compile_resume(
+        self,
+        job_id: int,
+        company_slug: str,
+        latex_content: str,
+        role_title: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Saves LaTeX and attempts compilation to PDF with professional naming.
+        """
+        filename_base = self.format_filename_base(company=company_slug, role_title=role_title, job_id=job_id)
         tex_path = self.output_dir / f"{filename_base}.tex"
         pdf_path = self.output_dir / f"{filename_base}.pdf"
         html_path = self.output_dir / f"{filename_base}.html"
@@ -249,3 +275,4 @@ class PDFCompiler:
 """
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html)
+

@@ -40,11 +40,11 @@ async def tailor_application_for_job(job_id: int, db: AsyncSession = Depends(get
         matched_skills=matched_skills
     )
 
-    # 2. Compile to PDF / Printable HTML
-    company_slug = "".join(c for c in job.company if c.isalnum() or c in ("-", "_"))
+    # 2. Compile to PDF / Printable HTML with professional naming
     pdf_res = pdf_compiler.compile_resume(
         job_id=job.id,
-        company_slug=company_slug,
+        company_slug=job.company,
+        role_title=job.title,
         latex_content=tailor_res["tailored_tex"]
     )
 
@@ -114,4 +114,13 @@ async def download_tex(job_id: int, db: AsyncSession = Depends(get_db)):
     if not app_record or not app_record.tailored_resume_tex:
         raise HTTPException(status_code=404, detail="LaTeX resume not found.")
 
-    return PlainTextResponse(content=app_record.tailored_resume_tex, media_type="text/x-tex")
+    job_res = await db.execute(select(JobPosting).where(JobPosting.id == job_id))
+    job = job_res.scalar_one_or_none()
+    filename = pdf_compiler.format_filename_base(company=job.company if job else "Company", role_title=job.title if job else "Role", job_id=job_id)
+
+    return PlainTextResponse(
+        content=app_record.tailored_resume_tex,
+        media_type="text/x-tex",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.tex"'}
+    )
+

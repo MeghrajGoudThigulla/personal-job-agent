@@ -136,10 +136,10 @@ class ScraperEngine:
                                 matched_skills=eval_res.get("matched_skills", [])
                             )
 
-                            company_slug = "".join(c for c in job.company if c.isalnum() or c in ("-", "_"))
                             pdf_res = self.pdf_compiler.compile_resume(
                                 job_id=job.id,
-                                company_slug=company_slug,
+                                company_slug=job.company,
+                                role_title=job.title,
                                 latex_content=tailor_res["tailored_tex"]
                             )
 
@@ -179,3 +179,4 @@ class ScraperEngine:
         await log_audit_event("scraper_cycle_complete", summary, "success")
         logger.info(f"Cycle completed: {summary}")
         return summary
+
