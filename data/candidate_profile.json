@@ -167,11 +167,14 @@
   ],
   "target_priorities": {
     "preferred_locations": [
-      "Remote India",
-      "Remote APAC",
-      "Hyderabad",
-      "Bengaluru",
-      "Remote Worldwide"
+      "India Specific (Hyderabad, Bengaluru, Pune, Mumbai, Gurgaon, Noida, Chennai, etc.)",
+      "Remote from India / Remote APAC",
+      "Remote from anywhere (Worldwide / Global / Unrestricted Remote)"
+    ],
+    "disqualified_locations": [
+      "US Only / US Citizen / Security Clearance required",
+      "UK Only / Europe Only / Canada Only / Australia Only",
+      "Onsite or Hybrid outside of India"
     ],
     "preferred_seniority": [
       "Mid-Level",

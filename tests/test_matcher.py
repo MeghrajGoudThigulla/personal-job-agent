@@ -13,6 +13,7 @@ def test_stair_matcher_matches_backend_role():
     assert "python" in res["matched_skills"]
     assert "fastapi" in res["matched_skills"]
     assert res["tier"] == "P1"
+    assert res["location_category"] == "Remote (India)"
     assert res["recommendation"] == "Apply"
 
 def test_stair_matcher_excludes_intern():
@@ -24,4 +25,52 @@ def test_stair_matcher_excludes_intern():
     
     res = matcher.evaluate_match(title, company, location, description)
     assert res["tier"] == "Excluded"
+    assert res["recommendation"] == "Skip"
+
+def test_stair_matcher_accepts_india_onsite():
+    matcher = StairMatcher()
+    title = "Software Engineer II - Backend"
+    company = "Razorpay"
+    location = "Bengaluru, India"
+    description = "We need an engineer with 2-4 years experience in Python, FastAPI, PostgreSQL and Redis."
+
+    res = matcher.evaluate_match(title, company, location, description)
+    assert res["score"] >= 70.0
+    assert "India" in res["location_category"]
+    assert res["recommendation"] == "Apply"
+
+def test_stair_matcher_accepts_remote_worldwide():
+    matcher = StairMatcher()
+    title = "Product Engineer"
+    company = "Linear"
+    location = "Remote - Worldwide"
+    description = "Building next generation developer tools with TypeScript, React, Node.js, PostgreSQL and Redis. Fully distributed global team."
+
+    res = matcher.evaluate_match(title, company, location, description)
+    assert res["score"] >= 70.0
+    assert "Worldwide" in res["location_category"]
+    assert res["recommendation"] == "Apply"
+
+def test_stair_matcher_excludes_us_only_restriction():
+    matcher = StairMatcher()
+    title = "Senior Python Engineer"
+    company = "USCorp"
+    location = "Remote - US Only"
+    description = "Must reside in the US. US citizenship required. Python, FastAPI, Docker."
+
+    res = matcher.evaluate_match(title, company, location, description)
+    assert res["score"] <= 20.0
+    assert "Excluded" in res["tier"]
+    assert res["recommendation"] == "Skip"
+
+def test_stair_matcher_excludes_non_india_onsite():
+    matcher = StairMatcher()
+    title = "Backend Engineer"
+    company = "LondonFintech"
+    location = "London, UK"
+    description = "Onsite role at our central London office. Python, PostgreSQL, Redis, 2-4 years experience."
+
+    res = matcher.evaluate_match(title, company, location, description)
+    assert res["score"] <= 20.0
+    assert "Excluded" in res["tier"]
     assert res["recommendation"] == "Skip"
