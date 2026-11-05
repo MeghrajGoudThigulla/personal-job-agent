@@ -20,8 +20,9 @@
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1">Active LLM Provider</label>
                     <select id="llm_provider" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                        <option value="groq" {% if settings.LLM_PROVIDER == 'groq' %}selected{% endif %}>Groq (Fastest Inference • Llama 3.3 70B)</option>
-                        <option value="nvidia" {% if settings.LLM_PROVIDER == 'nvidia' %}selected{% endif %}>NVIDIA NIM (Nemotron-3-Ultra / Llama 3.1)</option>
+                        <option value="auto" {% if settings.LLM_PROVIDER == 'auto' %}selected{% endif %}>⚡ Auto-Failover (Groq ⟷ NVIDIA NIM)</option>
+                        <option value="groq" {% if settings.LLM_PROVIDER == 'groq' %}selected{% endif %}>Groq Primary (Fastest Inference • Llama 3.3 70B)</option>
+                        <option value="nvidia" {% if settings.LLM_PROVIDER == 'nvidia' %}selected{% endif %}>NVIDIA NIM Primary (Nemotron-3-Ultra / Llama 3.1)</option>
                     </select>
                 </div>
 
@@ -168,3 +169,4 @@
     }
 </script>
 {% endblock %}
+

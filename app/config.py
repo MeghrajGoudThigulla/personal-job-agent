@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     MIN_MATCH_SCORE_NOTIFY: int = 70
     
     # LLM Configuration
-    # Options: "groq", "nvidia", "mock"
-    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "groq")
+    # Options: "auto" (Groq <-> NVIDIA NIM auto-failover), "groq", "nvidia"
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "auto")
     
     # Groq Settings
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
@@ -72,3 +72,4 @@ class Settings(BaseSettings):
     }
 
 settings = Settings()
+
