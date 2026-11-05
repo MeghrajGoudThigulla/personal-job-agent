@@ -14,3 +14,4 @@ __pycache__
 storage/resumes/*.pdf
 storage/resumes/*.tex
 storage/resumes/*.md
+

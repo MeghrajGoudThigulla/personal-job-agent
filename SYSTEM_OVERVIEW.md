@@ -72,3 +72,4 @@ Render's free web service spins down instances after 15 minutes of inbound inact
 | `scripts/release_gate.sh` | Automated pre-release quality gate and sanity verification |
 | `Dockerfile` | Multi-stage image with XeLaTeX and curl healthcheck |
 | `.dockerignore` | Build-context security exclusions |
+

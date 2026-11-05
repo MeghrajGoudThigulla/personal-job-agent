@@ -14,7 +14,7 @@ from sqlalchemy import select, desc, func
 from app.config import settings
 from app.core.database import init_db, get_db
 from app.core.models import JobPosting, TailoredApplication, AuditLog, AppSetting
-from app.core.scheduler import start_scheduler, stop_scheduler
+from app.core.scheduler import start_scheduler, stop_scheduler, get_scheduler_status
 from app.api.routes_jobs import router as jobs_router
 from app.api.routes_tailor import router as tailor_router
 from app.api.routes_scraper import router as scraper_router
@@ -205,10 +205,13 @@ async def trace_view(request: Request, db: AsyncSession = Depends(get_db)):
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
-    """Health check endpoint for Render deployment."""
+    """Health check endpoint for Render deployment and monitoring."""
+    sched_info = get_scheduler_status()
     return {
         "status": "healthy",
         "service": "personal-job-agent",
         "env": settings.ENV,
-        "scheduler_running": start_scheduler is not None
+        "scheduler_running": sched_info["running"],
+        "scrape_interval_minutes": sched_info["interval_minutes"],
+        "next_scrape_at": sched_info["next_scrape_at"]
     }
