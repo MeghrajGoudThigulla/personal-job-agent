@@ -57,7 +57,13 @@ class PDFCompiler:
         pdf_path = self.output_dir / f"{filename_base}.pdf"
         html_path = self.output_dir / f"{filename_base}.html"
 
-        # 1. Write .tex file
+        # 1. Ensure robust Linux font fallback and write .tex file
+        if "\\setmainfont{Georgia}" in latex_content and "\\IfFontExistsTF" not in latex_content:
+            latex_content = latex_content.replace(
+                "\\setmainfont{Georgia}",
+                "\\IfFontExistsTF{Georgia}{\\setmainfont{Georgia}}{\\setmainfont{FreeSerif}}"
+            )
+
         with open(tex_path, "w", encoding="utf-8") as f:
             f.write(latex_content)
 

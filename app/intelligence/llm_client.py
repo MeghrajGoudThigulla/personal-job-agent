@@ -74,20 +74,51 @@ class UnifiedLLMClient:
             "Authorization": f"Bearer {settings.GROQ_API_KEY}",
             "Content-Type": "application/json"
         }
-        payload = {
-            "model": settings.GROQ_MODEL,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            "temperature": temperature,
-            "max_tokens": max_tokens
-        }
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            return data["choices"][0]["message"]["content"]
+        
+        models_to_try = [
+            settings.GROQ_MODEL,
+            "openai/gpt-oss-120b",
+            "qwen/qwen3.8-27b",
+            "openai/gpt-oss-20b"
+        ]
+        # Preserve order while deduplicating
+        candidates = []
+        for m in models_to_try:
+            if m and m not in candidates:
+                candidates.append(m)
+
+        last_error = None
+        for model in candidates:
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "temperature": temperature,
+                "max_tokens": max_tokens
+            }
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    resp = await client.post(url, headers=headers, json=payload)
+                    if resp.status_code == 404:
+                        logger.warning(f"Groq model '{model}' not found (404), falling back to alternate available Groq model...")
+                        last_error = f"Model '{model}' returned 404"
+                        continue
+                    resp.raise_for_status()
+                    data = resp.json()
+                    return data["choices"][0]["message"]["content"]
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    logger.warning(f"Groq model '{model}' not found (404), falling back to alternate...")
+                    last_error = e
+                    continue
+                raise e
+            except Exception as e:
+                last_error = e
+                raise e
+
+        raise RuntimeError(f"All Groq model attempts failed: {last_error}")
 
     async def _call_nvidia_nim(self, system_prompt: str, user_prompt: str, temperature: float, max_tokens: int) -> str:
         url = f"{settings.NVIDIA_NIM_BASE_URL}/chat/completions"

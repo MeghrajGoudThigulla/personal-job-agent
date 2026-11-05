@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     
     # Groq Settings
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     
     # NVIDIA NIM Settings (e.g. nvidia/nemotron-3-ultra-550b-a55b or meta/llama-3.1-70b-instruct)
     NVIDIA_NIM_API_KEY: str = os.getenv("NVIDIA_NIM_API_KEY", "")
