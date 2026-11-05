@@ -4,6 +4,9 @@ from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
+def get_utc_now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
 class JobPosting(Base):
     __tablename__ = "jobs"
 
@@ -17,7 +20,7 @@ class JobPosting(Base):
     source_platform = Column(String(100), nullable=False, index=True)
     description = Column(Text, default="")
     posted_date = Column(String(100), default="")
-    discovered_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+    discovered_at = Column(DateTime, default=get_utc_now, index=True)
     
     # Intelligence Match Details
     match_score = Column(Float, default=0.0, index=True)
@@ -30,9 +33,12 @@ class JobPosting(Base):
     notified_at = Column(DateTime, nullable=True)
 
     # Relationships
-    application = relationship("TailoredApplication", back_populates="job", uselist=False, cascade="all, delete-orphan")
+    application = relationship("TailoredApplication", back_populates="job", uselist=False, cascade="all, delete-orphan", lazy="selectin")
 
     def to_dict(self):
+        has_app = False
+        if "application" in self.__dict__:
+            has_app = self.__dict__["application"] is not None
         return {
             "id": self.id,
             "title": self.title,
@@ -51,7 +57,7 @@ class JobPosting(Base):
             "status": self.status,
             "notified": self.notified,
             "notified_at": self.notified_at.isoformat() if self.notified_at else None,
-            "has_tailored_application": self.application is not None
+            "has_tailored_application": has_app
         }
 
 class TailoredApplication(Base):
@@ -66,7 +72,7 @@ class TailoredApplication(Base):
     cold_email_hiring_manager = Column(Text, default="")
     linkedin_4mm = Column(Text, default="")
     slop_score = Column(Float, default=0.0)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=get_utc_now)
 
     job = relationship("JobPosting", back_populates="application")
 
@@ -88,7 +94,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=get_utc_now, index=True)
     action = Column(String(100), nullable=False)
     details = Column(Text, default="")
     status = Column(String(50), default="success")
@@ -107,4 +113,4 @@ class AppSetting(Base):
 
     key = Column(String(100), primary_key=True)
     value = Column(Text, nullable=False)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=get_utc_now, onupdate=get_utc_now)

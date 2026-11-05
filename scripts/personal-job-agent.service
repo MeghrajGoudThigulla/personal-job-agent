@@ -13,3 +13,4 @@ EnvironmentFile=/home/thigulla-meghraj-goud/dev/job-applications/.env
 
 [Install]
 WantedBy=default.target
+

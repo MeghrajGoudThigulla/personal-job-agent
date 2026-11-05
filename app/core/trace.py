@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 from app.core.database import async_session_factory
 from app.core.models import AuditLog
@@ -16,7 +16,7 @@ async def log_audit_event(action: str, details: Any, status: str = "success") ->
         details_str = json.dumps(details) if not isinstance(details, str) else details
         async with async_session_factory() as session:
             audit = AuditLog(
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 action=action,
                 details=details_str,
                 status=status

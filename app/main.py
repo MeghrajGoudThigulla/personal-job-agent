@@ -77,7 +77,7 @@ if static_dir.exists():
 # Web UI Routes
 # -------------------------------------------------------------
 
-@app.get("/", response_class=HTMLResponse)
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def dashboard_view(
     request: Request,
     status: Optional[str] = None,
@@ -120,9 +120,9 @@ async def dashboard_view(
     jobs = res.scalars().all()
 
     return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
+        request=request,
+        name="index.html",
+        context={
             "stats": stats,
             "jobs": [j.to_dict() for j in jobs]
         }
@@ -158,9 +158,9 @@ async def job_detail_view(request: Request, job_id: int, db: AsyncSession = Depe
     job_dict["application"] = app_record.to_dict() if app_record else None
 
     return templates.TemplateResponse(
-        "job_detail.html",
-        {
-            "request": request,
+        request=request,
+        name="job_detail.html",
+        context={
             "job": job_dict,
             "match_meta": match_meta,
             "linkedin_messages": linkedin_messages
@@ -183,9 +183,9 @@ async def settings_view(request: Request):
     }
 
     return templates.TemplateResponse(
-        "settings.html",
-        {
-            "request": request,
+        request=request,
+        name="settings.html",
+        context={
             "settings": settings,
             "current_settings": current_settings
         }
@@ -196,14 +196,14 @@ async def trace_view(request: Request, db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(AuditLog).order_by(desc(AuditLog.timestamp)).limit(50))
     logs = res.scalars().all()
     return templates.TemplateResponse(
-        "audit_logs.html",
-        {
-            "request": request,
+        request=request,
+        name="audit_logs.html",
+        context={
             "logs": [l.to_dict() for l in logs]
         }
     )
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
     """Health check endpoint for Render deployment."""
     return {

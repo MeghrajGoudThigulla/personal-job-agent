@@ -19,3 +19,4 @@ PID=$!
 echo "Personal Job Agent is running with PID: $PID"
 echo "Open dashboard at: http://localhost:8000"
 echo "To stop: kill $PID"
+
