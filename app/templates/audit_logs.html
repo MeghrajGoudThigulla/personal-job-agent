@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Traceability & Audit Logs | Personal Job Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white">System Traceability Logs</h1>
+            <p class="text-xs text-slate-400 mt-1">Audit log complying with the AI Collaboration Field Guide. Every scrape, LLM generation, notification, and tailoring action is permanently traced.</p>
+        </div>
+        <button onclick="window.location.reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 self-start md:self-auto">
+            <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Logs
+        </button>
+    </div>
+
+    <div class="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950/80 border-b border-slate-800 text-[11px] uppercase font-semibold text-slate-400">
+                    <tr>
+                        <th class="py-3 px-4">Timestamp (UTC)</th>
+                        <th class="py-3 px-4">Action</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">Trace Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 font-mono">
+                    {% if logs %}
+                        {% for log in logs %}
+                        <tr class="hover:bg-slate-800/30 transition-colors">
+                            <td class="py-2.5 px-4 text-slate-400 whitespace-nowrap">{{ log.timestamp }}</td>
+                            <td class="py-2.5 px-4 font-semibold text-blue-400 whitespace-nowrap">{{ log.action }}</td>
+                            <td class="py-2.5 px-4 whitespace-nowrap">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase
+                                    {% if log.status == 'success' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30
+                                    {% elif log.status == 'warning' %}bg-amber-500/10 text-amber-400 border border-amber-500/30
+                                    {% else %}bg-rose-500/10 text-rose-400 border border-rose-500/30{% endif %}">
+                                    {{ log.status }}
+                                </span>
+                            </td>
+                            <td class="py-2.5 px-4 text-slate-300 max-w-lg truncate">{{ log.details }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="py-10 text-center text-slate-500 font-sans">No audit events recorded yet.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{
+  "prohibited_buzzwords": [
+    "seamless",
+    "robust",
+    "powerful",
+    "cutting-edge",
+    "game-changing",
+    "unlock",
+    "leverage",
+    "delve",
+    "tapestry",
+    "revolutionize",
+    "next-generation",
+    "innovative",
+    "fast-paced world",
+    "dynamic environment",
+    "results-oriented",
+    "passionate professional",
+    "synergy",
+    "spearheaded",
+    "paradigm shift",
+    "thought leader",
+    "rockstar",
+    "ninja",
+    "guru"
+  ],
+  "writing_rules": {
+    "enforce_falsifiable_metrics": true,
+    "require_concrete_technologies": true,
+    "prohibit_generic_summaries": true,
+    "require_specific_engineering_tradeoffs": true,
+    "no_bolding_in_cold_email_body": true,
+    "no_decorative_emojis_in_professional_artifacts": true
+  },
+  "score_thresholds": {
+    "max_tolerable_slop_score": 25,
+    "target_slop_score": 10
+  },
+  "approved_metric_templates": [
+    "Delivered {component} with {metric_num} {units} across {scope}",
+    "Reduced {latency_or_memory} by {percent}% via {specific_mechanism}",
+    "Engineered {system} using {tech_1} and {tech_2}, achieving {result}"
+  ]
+}

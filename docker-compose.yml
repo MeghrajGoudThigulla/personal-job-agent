@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  personal-job-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: personal-job-agent
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - SCHEDULER_ENABLED=true
+      - SCRAPE_INTERVAL_MINUTES=60
+      - MIN_MATCH_SCORE_NOTIFY=70
+      - LLM_PROVIDER=${LLM_PROVIDER:-groq}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - NVIDIA_NIM_API_KEY=${NVIDIA_NIM_API_KEY:-}
+      - NVIDIA_NIM_MODEL=${NVIDIA_NIM_MODEL:-nvidia/nemotron-3-ultra-550b-a55b}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

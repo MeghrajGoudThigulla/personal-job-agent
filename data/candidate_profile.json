@@ -1,0 +1,186 @@
+{
+  "name": "Thigulla Meghraj Goud",
+  "title": "Senior AI Developer & Full Stack Engineer",
+  "email": "meghraj.thigulla@outlook.com",
+  "phone": "+91 79972 21772",
+  "location": "Hyderabad, India",
+  "linkedin": "https://www.linkedin.com/in/meghraj-goud-thigulla",
+  "github": "https://github.com/MeghrajGoudThigulla",
+  "portfolio": "https://meghraj-portfolio.web.app/",
+  "certificates": "https://linktr.ee/meghraj_goud_thigulla",
+  "education": [
+    {
+      "institution": "Vignana Bharathi Institute of Technology (VBIT)",
+      "degree": "B.Tech in Information Technology",
+      "location": "Hyderabad, India",
+      "period": "2020 - 2024",
+      "cgpa": "8.71 / 10"
+    }
+  ],
+  "skills": {
+    "languages": [
+      "Python",
+      "C#",
+      "Dart",
+      "JavaScript",
+      "TypeScript",
+      "SQL",
+      "C++"
+    ],
+    "backend": [
+      "FastAPI",
+      "Flask",
+      "ASP.NET Core",
+      ".NET 8",
+      "Entity Framework Core",
+      "MediatR",
+      "SignalR",
+      "Celery",
+      "SQLAlchemy",
+      "Alembic",
+      "Prisma",
+      "Express",
+      "Node.js"
+    ],
+    "frontend_mobile": [
+      "Flutter",
+      "React",
+      "Next.js",
+      "HTML5",
+      "CSS3",
+      "Tailwind CSS",
+      "MUI",
+      "Riverpod",
+      "GoRouter"
+    ],
+    "databases": [
+      "PostgreSQL",
+      "Redis",
+      "SQL Server",
+      "SQLite",
+      "MySQL",
+      "MongoDB",
+      "Supabase",
+      "Firebase",
+      "Firestore"
+    ],
+    "architecture": [
+      "Clean Architecture",
+      "CQRS",
+      "REST APIs",
+      "RBAC",
+      "JWT",
+      "Transactional Outbox",
+      "Optimistic Concurrency",
+      "Rate Limiting",
+      "Caching",
+      "Row-Level Security (RLS)"
+    ],
+    "ai_ml": [
+      "ONNX Runtime",
+      "PaddleOCR",
+      "PyTesseract",
+      "Sentence Transformers",
+      "Embeddings",
+      "Model Gateway Services",
+      "RAG",
+      "LLM Integration"
+    ],
+    "devops": [
+      "Docker",
+      "Docker Compose",
+      "GitHub Actions",
+      "Render",
+      "AWS EC2",
+      "nginx",
+      "Linux",
+      "Git",
+      "xUnit",
+      "NetArchTest"
+    ]
+  },
+  "experience": [
+    {
+      "company": "Threshing Floor Group",
+      "website": "https://tfgroup.ai/en",
+      "title": "Senior AI Developer & Full Stack Engineer",
+      "period": "July 2024 - Oct 2026",
+      "location": "Hyderabad, India",
+      "bullets": [
+        "Delivered backend infrastructure of 286 endpoints, 61+ database models, and 30+ Alembic/Prisma migrations across multiple production products, owning schema design end to end.",
+        "Shipped 80+ mobile screens and 96+ web interfaces with Flutter, React, and Next.js on FastAPI backends, partnering with design and product to deliver on schedule.",
+        "Owned App Store / Play Store releases and deployment pipelines for 4+ Flutter apps (Employee Portal, HRMS, LMS, Care Navigator).",
+        "Engineered PostgreSQL/Supabase data layers with Row-Level Security, Redis rate limiting, Celery webhook workers, and dual-store WebSocket sync.",
+        "Deployed ML pipelines (OCR, embeddings) and third-party provider APIs into production FastAPI services.",
+        "Partnered with executive stakeholders as technical consultant, converting ambiguous requirements into shippable milestones; directed knowledge transfer for 8 engineers."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "TalentFlow",
+      "subtitle": "Enterprise Applicant Tracking System & Pipeline",
+      "demo_url": "https://talentflow-6tgp.onrender.com",
+      "github_url": "https://github.com/MeghrajGoudThigulla/TalentFlow",
+      "tech": [
+        "C#",
+        ".NET 8",
+        "ASP.NET Core",
+        "EF Core",
+        "SQL Server",
+        "MediatR",
+        "SignalR",
+        "Docker",
+        "Serilog",
+        "NetArchTest",
+        "xUnit"
+      ],
+      "bullets": [
+        "Architected a .NET 8 Web API with Clean Architecture and CQRS (MediatR), enforcing pipeline behaviors (Validation -> Logging -> Transaction -> Audit); achieved 73.4% test coverage across 90 automated tests (xUnit, NetArchTest, WebApplicationFactory).",
+        "Implemented the Transactional Outbox Pattern with SQL Server atomic table claims (UPDLOCK, READPAST), exponential backoff, and deduplication keys, guaranteeing at-least-once candidate email delivery via MailKit.",
+        "Designed RowVersion optimistic concurrency control resolving concurrent card movements with HTTP 409 Conflict; broadcast zero-latency Kanban pipeline updates across recruiter sessions via authenticated SignalR WebSocket groups.",
+        "Hardened application security against OWASP API Top 10: resource-based authorization (IDOR prevention on candidate evaluations), fixed-window rate limiting, magic-byte file signature validation on CVs, and request correlation IDs with Serilog.",
+        "Containerized multi-service stack with Docker Compose (API, SQL Server 2022, MailHog) and automated CI/CD via GitHub Actions with automated coverage gates, zero compiler warnings (-warnaserror), and continuous deployment to Render."
+      ]
+    },
+    {
+      "name": "IYOV AI",
+      "subtitle": "AI-Powered Workforce Management Ecosystem",
+      "demo_url": "https://iyov.ai/",
+      "tech": [
+        "Python",
+        "FastAPI",
+        "Flutter",
+        "Riverpod",
+        "GoRouter",
+        "Next.js",
+        "PostgreSQL",
+        "Redis",
+        "Firebase"
+      ],
+      "bullets": [
+        "Owned the India tax and compliance payroll module from scratch, translating complex statutory rules into automated payroll formulas.",
+        "Engineered multi-channel workforce management with real-time biometric and geo-fenced attendance APIs serving high concurrent loads.",
+        "Integrated ML pipelines for automated invoice and document OCR extraction with PaddleOCR and ONNX runtime."
+      ]
+    }
+  ],
+  "target_priorities": {
+    "preferred_locations": [
+      "Remote India",
+      "Remote APAC",
+      "Hyderabad",
+      "Bengaluru",
+      "Remote Worldwide"
+    ],
+    "preferred_seniority": [
+      "Mid-Level",
+      "Engineer II",
+      "SDE II",
+      "2-4 YOE",
+      "1-3 YOE"
+    ],
+    "salary_expectations": "Competitive market compensation, high-ownership engineering",
+    "ownership_traits": "Extremely adaptive, end-to-end builder, high technical rigor, no low-value busywork"
+  }
+}

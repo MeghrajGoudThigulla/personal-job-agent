@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.title }} @ {{ job.company }} | Personal Job Agent{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center space-x-2 text-xs text-slate-400 mb-1">
+            <a href="/" class="hover:text-blue-400"><i class="fa-solid fa-arrow-left mr-1"></i> Back to Feed</a>
+            <span>•</span>
+            <span>{{ job.source_platform }}</span>
+            <span>•</span>
+            <span>Discovered: {{ job.discovered_at[:10] if job.discovered_at else 'Recent' }}</span>
+        </div>
+        <h1 class="text-2xl font-bold text-white tracking-tight">{{ job.title }}</h1>
+        <div class="text-sm text-slate-300 font-medium mt-0.5">
+            <span class="text-blue-400 font-semibold">{{ job.company }}</span> • {{ job.location }} • <span class="text-slate-400">{{ job.role_category }}</span>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-wrap items-center gap-2">
+        <a href="{{ job.url }}" target="_blank" class="px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">
+            <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Original Posting
+        </a>
+        <button onclick="tailorNow({{ job.id }})" id="btn-tailor-job" class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/20">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Generate / Refresh Tailoring
+        </button>
+        <button onclick="updateStatus({{ job.id }}, 'applied')" class="px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-600/90 hover:bg-emerald-600 text-white">
+            <i class="fa-solid fa-check mr-1"></i> Mark Applied
+        </button>
+    </div>
+</div>
+
+<!-- STAIR Structure-Aware Match Banner -->
+<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4 mb-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg
+                {% if job.match_score >= 85 %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30
+                {% elif job.match_score >= 70 %}bg-blue-500/10 text-blue-400 border border-blue-500/30
+                {% else %}bg-amber-500/10 text-amber-400 border border-amber-500/30{% endif %}">
+                {{ job.match_score }}%
+            </div>
+            <div>
+                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">STAIR Match Verdict</div>
+                <div class="text-sm font-bold text-white">{{ match_meta.tier }} Priority Tier • {{ job.role_category }}</div>
+            </div>
+        </div>
+
+        <div>
+            <span class="text-xs px-3 py-1 rounded-full font-semibold
+                {% if job.match_score >= 70 %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                {% else %}bg-slate-800 text-slate-400{% endif %}">
+                Recommendation: {{ match_meta.recommendation }}
+            </span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div>
+            <span class="text-slate-400 font-semibold block mb-2">Matched Stack & Core Capabilities:</span>
+            <div class="flex flex-wrap gap-1.5">
+                {% if match_meta.matched_skills %}
+                    {% for skill in match_meta.matched_skills %}
+                    <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/30 font-medium">
+                        ✓ {{ skill }}
+                    </span>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-slate-500">None detected in snippet</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div>
+            <span class="text-slate-400 font-semibold block mb-2">Missing or Stretch Technologies:</span>
+            <div class="flex flex-wrap gap-1.5">
+                {% if match_meta.missing_skills %}
+                    {% for skill in match_meta.missing_skills %}
+                    <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-medium">
+                        {{ skill }}
+                    </span>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-emerald-400 font-medium">No major tech deficits detected</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs: Tailored Resume vs Cold Outreach vs Description -->
+<div class="border-b border-slate-800 mb-6 flex space-x-6 text-sm font-semibold">
+    <button onclick="switchTab('resume')" id="tab-btn-resume" class="pb-3 border-b-2 border-blue-500 text-blue-400">
+        <i class="fa-solid fa-file-lines mr-1.5"></i> Tailored Resume (LaTeX / PDF)
+    </button>
+    <button onclick="switchTab('outreach')" id="tab-btn-outreach" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-envelope-open-text mr-1.5"></i> Cold Emails & 4MM
+    </button>
+    <button onclick="switchTab('desc')" id="tab-btn-desc" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-align-left mr-1.5"></i> Original Job Description
+    </button>
+</div>
+
+<!-- TAB 1: TAILORED RESUME -->
+<div id="tab-content-resume" class="space-y-4">
+    {% if job.application %}
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div class="flex items-center space-x-3">
+                <span class="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
+                    Anti-Slop Score: {{ job.application.slop_score }}/100 (Distinct)
+                </span>
+                <span class="text-xs text-slate-400">Generated tailored version specifically aligned to {{ job.company }}</span>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <a href="/api/tailor/{{ job.id }}/download-pdf" target="_blank" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-sm flex items-center">
+                    <i class="fa-solid fa-download mr-1.5"></i> Download PDF
+                </a>
+                <a href="/api/tailor/{{ job.id }}/download-tex" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center">
+                    <i class="fa-solid fa-code mr-1.5"></i> Download .tex
+                </a>
+            </div>
+        </div>
+
+        <!-- LaTeX Preview -->
+        <div class="mt-4">
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+                <span class="font-semibold">Tailored LaTeX Source:</span>
+                <button onclick="copyToClipboard('code-latex')" class="hover:text-white"><i class="fa-solid fa-copy mr-1"></i> Copy LaTeX</button>
+            </div>
+            <pre id="code-latex" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 font-mono overflow-x-auto max-h-[500px] border border-slate-800/80">{{ job.application.tailored_resume_tex }}</pre>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-12 bg-slate-900/40 rounded-xl border border-slate-800">
+        <p class="text-xs text-slate-400 mb-3">No tailored resume generated yet for this posting.</p>
+        <button onclick="tailorNow({{ job.id }})" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Generate Tailored Resume & Outreach
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- TAB 2: COLD OUTREACH -->
+<div id="tab-content-outreach" class="space-y-6 hidden">
+    {% if job.application %}
+    <!-- HR / Recruiter Cold Email -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+            <div>
+                <h3 class="text-sm font-bold text-white">HR / Recruiter Cold Email</h3>
+                <span class="text-xs text-slate-400">Strictly adheres to MPM JobHunt Cheat Sheet (clean links, zero bold markers)</span>
+            </div>
+            <button onclick="copyToClipboard('text-hr-email')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
+                <i class="fa-solid fa-copy mr-1"></i> Copy Email
+            </button>
+        </div>
+        <pre id="text-hr-email" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 whitespace-pre-wrap font-mono border border-slate-800/80">{{ job.application.cold_email_hr }}</pre>
+    </div>
+
+    <!-- Hiring Manager / Peer Email -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+            <div>
+                <h3 class="text-sm font-bold text-white">Hiring Manager / Peer Email</h3>
+                <span class="text-xs text-slate-400">Technical conversation starter for 15-minute coffee chat</span>
+            </div>
+            <button onclick="copyToClipboard('text-hm-email')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
+                <i class="fa-solid fa-copy mr-1"></i> Copy Email
+            </button>
+        </div>
+        <pre id="text-hm-email" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 whitespace-pre-wrap font-mono border border-slate-800/80">{{ job.application.cold_email_hiring_manager }}</pre>
+    </div>
+
+    <!-- LinkedIn 4MM Sequence -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
+        <div class="pb-3 border-b border-slate-800 mb-4">
+            <h3 class="text-sm font-bold text-white">LinkedIn 4MM Sequence</h3>
+            <span class="text-xs text-slate-400">Multi-touch relationship building sequence from MPM cheat sheet</span>
+        </div>
+        
+        <div class="space-y-3" id="linkedin-seq-box">
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/80">
+                <div class="flex justify-between items-center mb-1 text-[11px] text-slate-400 font-semibold">
+                    <span>Message 1: Connect Request</span>
+                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white"><i class="fa-solid fa-copy"></i></button>
+                </div>
+                <div class="text-xs text-slate-300">{{ linkedin_messages.m1_connect }}</div>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/80">
+                <div class="flex justify-between items-center mb-1 text-[11px] text-slate-400 font-semibold">
+                    <span>Message 2: 60-Second Feedback</span>
+                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white"><i class="fa-solid fa-copy"></i></button>
+                </div>
+                <div class="text-xs text-slate-300">{{ linkedin_messages.m2_feedback }}</div>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/80">
+                <div class="flex justify-between items-center mb-1 text-[11px] text-slate-400 font-semibold">
+                    <span>Message 3: Alignment</span>
+                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white"><i class="fa-solid fa-copy"></i></button>
+                </div>
+                <div class="text-xs text-slate-300">{{ linkedin_messages.m3_alignment }}</div>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/80">
+                <div class="flex justify-between items-center mb-1 text-[11px] text-slate-400 font-semibold">
+                    <span>Message 4: Referral Request with Link</span>
+                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white"><i class="fa-solid fa-copy"></i></button>
+                </div>
+                <div class="text-xs text-slate-300">{{ linkedin_messages.m4_referral }}</div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-12 bg-slate-900/40 rounded-xl border border-slate-800">
+        <p class="text-xs text-slate-400 mb-3">Outreach templates will be generated when you tailor this role.</p>
+        <button onclick="tailorNow({{ job.id }})" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Generate Outreach
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- TAB 3: DESCRIPTION -->
+<div id="tab-content-desc" class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 hidden">
+    <h3 class="text-sm font-bold text-white mb-3">Job Description</h3>
+    <div class="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans">
+        {{ job.description|striptags }}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function switchTab(tab) {
+        document.getElementById('tab-content-resume').classList.add('hidden');
+        document.getElementById('tab-content-outreach').classList.add('hidden');
+        document.getElementById('tab-content-desc').classList.add('hidden');
+
+        document.getElementById('tab-btn-resume').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+        document.getElementById('tab-btn-outreach').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+        document.getElementById('tab-btn-desc').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+
+        if (tab === 'resume') {
+            document.getElementById('tab-content-resume').classList.remove('hidden');
+            document.getElementById('tab-btn-resume').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+        } else if (tab === 'outreach') {
+            document.getElementById('tab-content-outreach').classList.remove('hidden');
+            document.getElementById('tab-btn-outreach').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+        } else if (tab === 'desc') {
+            document.getElementById('tab-content-desc').classList.remove('hidden');
+            document.getElementById('tab-btn-desc').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+        }
+    }
+
+    async function tailorNow(jobId) {
+        const btn = document.getElementById('btn-tailor-job');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Tailoring...';
+
+        try {
+            const res = await fetch(`/api/tailor/${jobId}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                alert(`✨ Tailoring complete! Anti-slop score: ${data.slop_score}/100 (${data.slop_grade})`);
+                window.location.reload();
+            } else {
+                alert('Tailoring error: ' + JSON.stringify(data));
+            }
+        } catch (e) {
+            alert('Tailoring failed: ' + e);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Generate / Refresh Tailoring';
+        }
+    }
+
+    async function updateStatus(jobId, status) {
+        try {
+            await fetch(`/api/jobs/${jobId}/status?status=${status}`, { method: 'PATCH' });
+            window.location.reload();
+        } catch (e) {
+            alert('Status update failed: ' + e);
+        }
+    }
+
+    function copyToClipboard(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            navigator.clipboard.writeText(el.innerText);
+            alert('Copied to clipboard!');
+        }
+    }
+
+    function copyText(txt) {
+        navigator.clipboard.writeText(txt);
+        alert('Copied message!');
+    }
+</script>
+{% endblock %}

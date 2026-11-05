@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Personal Job Agent | Meghraj Goud Thigulla{% endblock %}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        code, pre {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
+
+    <!-- Top Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/" class="flex items-center space-x-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-radar text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">Personal Job Agent</span>
+                        <span class="block text-xs text-blue-400 font-medium">Meghraj Goud Thigulla</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center space-x-1">
+                <a href="/" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.url.path == '/' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i class="fa-solid fa-briefcase mr-1.5 text-xs"></i> Job Feed
+                </a>
+                <a href="/trace" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.url.path == '/trace' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i class="fa-solid fa-clipboard-list mr-1.5 text-xs"></i> Audit Trace
+                </a>
+                <a href="/settings" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.url.path == '/settings' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i class="fa-solid fa-sliders mr-1.5 text-xs"></i> Settings
+                </a>
+            </nav>
+
+            <!-- Quick Trigger Actions -->
+            <div class="flex items-center space-x-3">
+                <button onclick="triggerScraper('all')" id="btn-scrape-all" class="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 transition-all active:scale-95">
+                    <i class="fa-solid fa-arrows-rotate mr-1.5" id="scrape-icon"></i> Run Scrapers
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>Personal Job Agent • Structure-Aware (STAIR) Retrieval & Anti-Slop Tailoring</div>
+            <div class="flex items-center space-x-4">
+                <a href="https://github.com/MeghrajGoudThigulla/personal-job-agent" target="_blank" class="hover:text-slate-400"><i class="fa-brands fa-github mr-1"></i> GitHub</a>
+                <a href="https://meghraj-portfolio.web.app/" target="_blank" class="hover:text-slate-400"><i class="fa-solid fa-globe mr-1"></i> Portfolio</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Global Toast / Scraper Runner JS -->
+    <script>
+        async function triggerScraper(filterType = 'all') {
+            const btn = document.getElementById('btn-scrape-all');
+            const icon = document.getElementById('scrape-icon');
+            if (icon) icon.classList.add('fa-spin');
+            if (btn) btn.disabled = true;
+
+            try {
+                const res = await fetch(`/api/scraper/trigger?filter_type=${filterType}`, { method: 'POST' });
+                const data = await res.json();
+                alert(`🚀 ${data.message}`);
+            } catch (err) {
+                alert('Scraper trigger error: ' + err);
+            } finally {
+                setTimeout(() => {
+                    if (icon) icon.classList.remove('fa-spin');
+                    if (btn) btn.disabled = false;
+                    window.location.reload();
+                }, 3000);
+            }
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

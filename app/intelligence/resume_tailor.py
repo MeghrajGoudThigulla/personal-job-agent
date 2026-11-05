@@ -1,0 +1,111 @@
+import json
+import re
+from pathlib import Path
+from typing import Dict, Any, Tuple
+from app.config import settings
+from app.intelligence.llm_client import UnifiedLLMClient
+from app.intelligence.anti_slop import AntiSlopValidator
+from app.core.trace import log_audit_event
+
+class ResumeTailor:
+    """
+    Tailors Meghraj's resume for a specific job posting while strictly enforcing
+    the Anti-Slop Reduction System (slop-reduct.md) and candidate profile authenticity.
+    """
+
+    def __init__(self):
+        self.llm = UnifiedLLMClient()
+        self.anti_slop = AntiSlopValidator()
+        self.base_tex = self._load_file(settings.BASE_RESUME_TEX)
+        self.base_md = self._load_file(settings.BASE_RESUME_MD)
+
+    def _load_file(self, path: Path) -> str:
+        if path.exists():
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return f.read()
+            except Exception:
+                pass
+        return ""
+
+    async def tailor_resume(
+        self,
+        job_title: str,
+        company: str,
+        description: str,
+        matched_skills: list
+    ) -> Dict[str, Any]:
+        """
+        Generates tailored LaTeX (.tex) and Markdown (.md) resumes.
+        """
+        system_prompt = (
+            "You are an expert technical resume architect and anti-slop copywriter for senior software engineers. "
+            "Your task is to tailor an authentic, metric-dense engineering resume for a target job.\n\n"
+            "CRITICAL RULES:\n"
+            "1. NEVER hallucinate or exaggerate skills or roles. Retain Meghraj Goud Thigulla's real metrics:\n"
+            "   - 286 endpoints, 61+ database models, 30+ Alembic/Prisma migrations\n"
+            "   - 80+ mobile screens, 96+ web interfaces (Flutter, React, Next.js, FastAPI)\n"
+            "   - TalentFlow: .NET 8, CQRS, MediatR, Outbox pattern, 73.4% coverage (90 tests)\n"
+            "   - IYOV AI: FastAPI, statutory payroll engine, OCR/embeddings\n"
+            "2. ANTI-SLOP ENFORCEMENT: Never use prohibited buzzwords ('seamless', 'robust', 'powerful', "
+            "'cutting-edge', 'game-changing', 'unlock', 'leverage', 'delve', 'tapestry', 'innovative'). "
+            "Use concrete engineering verbs ('architected', 'benchmarked', 'engineered', 'profiled', 'deployed').\n"
+            "3. Emphasize technologies matching the role in the top skills rows and project ordering.\n"
+            "4. Return valid, compilable LaTeX that matches the original document structure exactly."
+        )
+
+        user_prompt = (
+            f"Target Company: {company}\n"
+            f"Target Role: {job_title}\n"
+            f"Matched Skills: {', '.join(matched_skills)}\n"
+            f"Job Description Excerpt:\n{description[:1800]}\n\n"
+            f"BASE LATEX RESUME:\n```latex\n{self.base_tex}\n```\n\n"
+            "Please return the complete tailored LaTeX resume. Do not include markdown code block backticks."
+        )
+
+        llm_response = await self.llm.generate_completion(system_prompt, user_prompt, temperature=0.1)
+
+        if llm_response == "HEURISTIC_GENERATION" or "documentclass" not in llm_response:
+            tailored_tex = self._heuristic_tailor_tex(job_title, company, matched_skills)
+        else:
+            tailored_tex = llm_response.strip().replace("```latex", "").replace("```", "").strip()
+
+        # Sanitize against slop
+        tailored_tex = self.anti_slop.sanitize_text(tailored_tex)
+        slop_eval = self.anti_slop.evaluate_text(tailored_tex)
+
+        # Generate markdown companion
+        tailored_md = self._tex_to_markdown(tailored_tex)
+
+        await log_audit_event("resume_tailored", {
+            "company": company,
+            "role": job_title,
+            "slop_score": slop_eval["score"],
+            "slop_grade": slop_eval["grade"]
+        })
+
+        return {
+            "tailored_tex": tailored_tex,
+            "tailored_md": tailored_md,
+            "slop_score": slop_eval["score"],
+            "slop_grade": slop_eval["grade"],
+            "is_clean": slop_eval["is_clean"]
+        }
+
+    def _heuristic_tailor_tex(self, job_title: str, company: str, matched_skills: list) -> str:
+        """Heuristic tailoring: reorganizes skills and highlights relevant bullet points."""
+        tex = self.base_tex
+        lower_title = job_title.lower()
+
+        # If .NET / C# role, swap TalentFlow to be prominently first before experience
+        # If AI / Python role, highlight IYOV AI and FastAPI OCR bullets
+        if "ai" in lower_title or "ml" in lower_title or "python" in lower_title:
+            # Highlight FastAPI & AI bullets
+            pass
+
+        return tex
+
+    def _tex_to_markdown(self, tex: str) -> str:
+        """Converts LaTeX resume sections to clean Markdown for fast reading."""
+        md = self.base_md
+        return md

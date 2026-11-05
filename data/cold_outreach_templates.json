@@ -1,0 +1,22 @@
+{
+  "cold_email": {
+    "hr_recruiter": {
+      "subject": "{recruiter_first_name}, I am keen to serve {company_name} as a {job_title}!",
+      "body": "Hello {recruiter_name},\n\nI came across the job opportunity for {job_title} ({job_link}) from your team, which matches my expertise in {domain_or_industry}.\n\nMy background is in {skill_1}, {skill_2}, and {skill_3}, which directly aligns with the role requirements. More importantly, I take genuine ownership rather than approaching software like a checkbox task. I bring a mix of {ownership_trait_1}, {ownership_trait_2}, and a sharp understanding of {domain_area_1} and {domain_area_2}, allowing me to solve engineering problems with a broader, more strategic lens.\n\nI would love to hear your perspective on what makes someone successful in this role. Would you be open to a quick 15-minute coffee chat this week?\n\nI understand your calendar may be packed, but even a brief pointer to the hiring team would mean a lot.\n\nRegards,\n{candidate_name}\n{candidate_linkedin}\n{candidate_phone}"
+    },
+    "hiring_manager_peer": {
+      "subject": "{manager_first_name}, quick advice on {specific_tech_or_problem}",
+      "body": "Hello {manager_name},\n\nI came across your profile and was impressed by your team's work at {company_name}, especially around {company_engineering_focus}.\n\nMy core engineering background is in {skill_1}, {skill_2}, and {skill_3}, directly aligning with the engineering challenges at {company_name}. I bring a track record of architecting reliable production services, optimizing database models, and delivering full-lifecycle systems under real-world constraints.\n\nI would genuinely appreciate your perspective on what separates a good engineer from a great one on your team. Would you be open to a 10-minute sync this week?\n\nBest regards,\n{candidate_name}\n{candidate_linkedin}\n{candidate_phone}"
+    },
+    "follow_up": {
+      "subject": "{job_title} at {company_name} - Quick Follow-up",
+      "body": "Hello {recipient_name},\n\nFollowing up briefly on my previous note regarding the {job_title} role at {company_name}. I remain very interested in contributing to {company_name}'s backend and product engineering initiatives.\n\nPlease let me know if there are any specific technical qualifications or portfolio projects (such as my production .NET Clean Architecture ATS TalentFlow or FastAPI payroll engine) I can provide.\n\nRegards,\n{candidate_name}\n{candidate_linkedin}\n{candidate_phone}"
+    }
+  },
+  "linkedin_4mm": {
+    "message_1_connect": "Hello {recipient_name}, saw your work as {recipient_title} at {company_name}\u2014impressive trajectory!\nMy background in {skill_1} and {skill_2} aligns closely with your team's technical focus. Would love to connect and follow your work.",
+    "message_2_feedback": "Thank you for connecting, {recipient_name}! Given your deep context at {company_name}, could I ask a 60-second favor? I'd be grateful if you could glance at my engineering resume and share one critical thing that would stand out to your team.",
+    "message_3_alignment": "Really appreciate your perspective, {recipient_name}. I refined my profile to emphasize {skill_1} and production system design. Do you feel this aligns with what {company_name} looks for in software engineers?",
+    "message_4_referral": "Hi {recipient_name}, I noticed an open position for {job_title} at {company_name} ({job_link}) that is a direct match with my stack and experience. Would you be comfortable submitting an internal referral or introducing me to the hiring manager? Happy to share any additional details!"
+  }
+}
