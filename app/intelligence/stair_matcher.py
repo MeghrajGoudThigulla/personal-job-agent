@@ -165,55 +165,65 @@ class StairMatcher:
         "singapore", "tokyo", "zurich"
     ]
 
-    def evaluate_location(self, location: str, description: str) -> Tuple[bool, float, str, str]:
+    def evaluate_location(self, location: str, description: str, title: str = "") -> Tuple[bool, float, str, str]:
         """
         Validates location feasibility according to candidate preference:
         1. India-specific jobs (Onsite/Hybrid in Hyderabad, Bangalore, Pune, etc.)
         2. Remote from India (Remote - India, APAC)
         3. Remote from anywhere (Worldwide / Global / Unrestricted Remote)
         
-        Disqualifies jobs restricted to other regions (US only, UK only, non-India onsite).
+        Disqualifies jobs restricted to other regions (US only, UK only, EMEA, AMER, Europe, non-India onsite).
         Returns: (is_eligible, score, category, reason)
         """
         loc_clean = (location or "").lower().strip()
+        title_lower = (title or "").lower().strip()
         desc_sample = description[:1500].lower()
-        combined = f"{loc_clean} {desc_sample}"
+        combined = f"{title_lower} {loc_clean} {desc_sample}"
 
-        # 1. Check for hard disqualifiers (e.g. US Only, UK Only, Europe Only, Citizen restrictions)
+        # 0. Check regional tags in Title (e.g. "Support Engineer (EMEA)" or "(AMER)" or "(Europe)")
+        if re.search(r"\b(emea|amer|americas|latam)\b", title_lower) and not re.search(r"\b(apac|india)\b", title_lower):
+            matched_reg = re.search(r"\b(emea|amer|americas|latam)\b", title_lower).group(1).upper()
+            return False, 0.0, "Excluded (Restricted Region)", f"Title restricted to regional shift '{matched_reg}'"
+
+        # 1. Check standalone non-India location names (e.g. location="Europe" or "EMEA")
+        if loc_clean in ("europe", "emea", "amer", "americas", "latam", "united states", "us", "usa", "uk", "united kingdom", "canada", "australia", "germany", "france"):
+            return False, 0.0, "Excluded (Restricted Region)", f"Location restricted to {loc_clean.title()}"
+
+        # 2. Check for hard disqualifiers in description / location
         for disq in self.DISQUALIFIED_REGIONS:
             if re.search(rf"\b{re.escape(disq)}\b", combined):
                 # If 'india' is explicitly included as an alternative, don't disqualify
                 if "india" not in loc_clean and "india" not in desc_sample[:300]:
                     return False, 0.0, "Excluded (Restricted Region)", f"Restricted to '{disq}'"
 
-        # 2. Check India-specific or India Remote
+        # 3. Check India-specific or India Remote
         for ind_term in self.INDIA_LOCATIONS:
             if re.search(rf"\b{re.escape(ind_term)}\b", loc_clean):
                 if "remote" in loc_clean or "remote" in desc_sample:
                     return True, 25.0, "Remote (India)", f"Remote role based in India ({ind_term.title()})"
                 return True, 25.0, "India Onsite/Hybrid", f"India position in {ind_term.title()}"
 
-        # 3. Check APAC / Asia-Pacific (India-inclusive region)
-        if any(term in loc_clean or term in desc_sample[:500] for term in ["apac", "asia-pacific", "south asia", "remote - asia", "remote (apac)"]):
+        # 4. Check APAC / Asia-Pacific (India-inclusive region)
+        if any(term in loc_clean or term in title_lower or term in desc_sample[:500] for term in ["apac", "asia-pacific", "south asia", "remote - asia", "remote (apac)"]):
             return True, 25.0, "Remote (APAC / India)", "Remote eligible for India / APAC candidates"
 
-        # 4. Check Explicit Worldwide / Global / Anywhere
+        # 5. Check Explicit Worldwide / Global / Anywhere
         for gw in self.GLOBAL_REMOTE_KEYWORDS:
-            if gw in loc_clean or gw in desc_sample[:600]:
+            if gw in loc_clean or gw in title_lower or gw in desc_sample[:600]:
                 return True, 25.0, "Remote (Worldwide / Anywhere)", f"Remote worldwide opportunity ({gw})"
 
-        # 5. Check Unrestricted "Remote"
+        # 6. Check Unrestricted "Remote"
         if loc_clean in ("remote", "remote - global", "flexible", "work from home", "remote-first") or loc_clean.startswith("remote"):
             # Ensure description doesn't secretly require US/European presence
             if not any(non_ind in desc_sample[:600] for non_ind in ["united states", "north america", "must be based in"]):
                 return True, 25.0, "Remote (Worldwide)", "Unrestricted Remote position"
 
-        # 6. Check Non-India Onsite Cities (e.g. San Francisco, London, Berlin)
+        # 7. Check Non-India Onsite Cities (e.g. San Francisco, London, Berlin)
         for city in self.NON_INDIA_CITIES:
             if city in loc_clean and "india" not in loc_clean:
                 return False, 0.0, "Excluded (Non-India Onsite)", f"Onsite/Hybrid outside India: {location}"
 
-        # 7. Check if description mentions India as an option
+        # 8. Check if description mentions India as an option
         if "india" in desc_sample[:500] or "hyderabad" in desc_sample[:500] or "bengaluru" in desc_sample[:500]:
             return True, 25.0, "Remote (India)", f"India location mentioned in posting: {location}"
 
@@ -255,7 +265,7 @@ class StairMatcher:
                 }
 
         # 2. Location Feasibility Gate (India, Remote from India, or Remote from Anywhere)
-        is_loc_eligible, loc_score, loc_cat, loc_detail = self.evaluate_location(location, description)
+        is_loc_eligible, loc_score, loc_cat, loc_detail = self.evaluate_location(location, description, title=title)
         
         # 3. Technical Stack Alignment
         found_matches = []

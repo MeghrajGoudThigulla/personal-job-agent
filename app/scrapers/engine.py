@@ -130,7 +130,11 @@ class ScraperEngine:
             await session.commit()
 
         # Phase 2: Dispatch notifications and tailor resumes WITHOUT holding open DB locks
-        for hm in high_match_items:
+        # Prioritize highest match scores first and throttle to top 5 per cycle to prevent LLM rate limits (429)
+        high_match_items.sort(key=lambda x: x["eval_res"].get("score", 0.0), reverse=True)
+        items_to_process = high_match_items[:5]
+
+        for hm in items_to_process:
             alert_payload = hm["job_dict"]
             alert_payload["matched_skills"] = hm["eval_res"].get("matched_skills", [])
 
@@ -190,6 +194,9 @@ class ScraperEngine:
                         await session.commit()
                 except Exception as tailor_e:
                     logger.error(f"Auto-tailor failed for job {hm['job_id']}: {tailor_e}")
+
+            # Respectful pacing between external LLM calls
+            await asyncio.sleep(2.0)
 
         duration = (datetime.utcnow() - start_time).total_seconds()
         summary = {

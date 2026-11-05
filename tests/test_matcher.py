@@ -74,3 +74,25 @@ def test_stair_matcher_excludes_non_india_onsite():
     assert res["score"] <= 20.0
     assert "Excluded" in res["tier"]
     assert res["recommendation"] == "Skip"
+
+def test_stair_matcher_excludes_emea_and_amer_in_title():
+    matcher = StairMatcher()
+    res_emea = matcher.evaluate_match("Support Engineer (EMEA)", "Supabase", "Remote", "PostgreSQL, Python, Redis")
+    assert res_emea["score"] <= 20.0
+    assert "Excluded" in res_emea["tier"]
+
+    res_amer = matcher.evaluate_match("Support Engineer (AMER)", "Supabase", "Remote", "PostgreSQL, Python, Redis")
+    assert res_amer["score"] <= 20.0
+    assert "Excluded" in res_amer["tier"]
+
+def test_stair_matcher_accepts_apac_in_title():
+    matcher = StairMatcher()
+    res_apac = matcher.evaluate_match("Support Engineer (APAC)", "Supabase", "Remote", "PostgreSQL, Python, Redis, 2-4 years experience")
+    assert res_apac["score"] >= 70.0
+    assert "APAC" in res_apac["location_category"]
+
+def test_stair_matcher_excludes_europe_location():
+    matcher = StairMatcher()
+    res_euro = matcher.evaluate_match("Senior / Staff Fullstack Engineer", "Linear", "Europe", "TypeScript, React, PostgreSQL")
+    assert res_euro["score"] <= 20.0
+    assert "Excluded" in res_euro["tier"]

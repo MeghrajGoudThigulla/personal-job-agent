@@ -105,12 +105,16 @@ class UnifiedLLMClient:
                         logger.warning(f"Groq model '{model}' not found (404), falling back to alternate available Groq model...")
                         last_error = f"Model '{model}' returned 404"
                         continue
+                    if resp.status_code == 429:
+                        logger.warning(f"Groq model '{model}' rate limited (429), falling back to alternate model...")
+                        last_error = f"Model '{model}' returned 429"
+                        continue
                     resp.raise_for_status()
                     data = resp.json()
                     return data["choices"][0]["message"]["content"]
             except httpx.HTTPStatusError as e:
-                if e.response.status_code == 404:
-                    logger.warning(f"Groq model '{model}' not found (404), falling back to alternate...")
+                if e.response.status_code in (404, 429):
+                    logger.warning(f"Groq model '{model}' HTTP {e.response.status_code}, trying fallback...")
                     last_error = e
                     continue
                 raise e
@@ -135,11 +139,15 @@ class UnifiedLLMClient:
             "temperature": temperature,
             "max_tokens": max_tokens
         }
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            return data["choices"][0]["message"]["content"]
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.post(url, headers=headers, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+                return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            err_msg = str(e) or repr(e) or f"{type(e).__name__} (Request timed out or connection dropped)"
+            raise RuntimeError(f"{err_msg}") from e
 
     def _heuristic_fallback(self, system_prompt: str, user_prompt: str) -> str:
         """Deterministic, high-quality rule-based fallback when keys are absent."""
