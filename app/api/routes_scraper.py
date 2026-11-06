@@ -23,3 +23,10 @@ async def get_personalized_queries():
         with open(settings.PERSONALIZED_QUERIES_JSON, "r", encoding="utf-8") as f:
             return json.load(f)
     return {"roles": []}
+
+@router.get("/dorks/status")
+async def get_dorks_rotation_status():
+    """Returns the current round-robin batch cursor and active query batch."""
+    from app.scrapers.search_dorks import SearchDorksScraper
+    dorks_scraper = SearchDorksScraper()
+    return await dorks_scraper.get_status()

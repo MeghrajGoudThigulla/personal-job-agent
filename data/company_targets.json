@@ -121,36 +121,42 @@
   ],
   "direct_ats_boards": {
     "ashby": [
-      "linear",
-      "posthog",
       "cal.com",
+      "cohere",
+      "dust",
+      "linear",
+      "modal-labs",
+      "perplexity",
+      "posthog",
+      "quartr",
       "raycast",
+      "retool",
+      "slite",
       "supabase",
       "synthesia",
-      "dust",
-      "retool",
-      "together-ai",
-      "modal-labs",
-      "cohere",
-      "perplexity"
+      "together-ai"
     ],
     "greenhouse": [
       "anthropic",
-      "openai",
-      "stripe",
-      "figma",
       "databricks",
-      "snowflake",
-      "vercel",
       "discord",
+      "exoduspoint",
+      "figma",
+      "groww",
+      "openai",
+      "postman",
       "reddit",
-      "scaleai"
+      "scaleai",
+      "snowflake",
+      "stripe",
+      "vercel"
     ],
     "lever": [
+      "atlassian",
+      "courier",
       "netlify",
       "palantir",
-      "courier",
-      "atlassian"
+      "upstox"
     ]
   }
 }
