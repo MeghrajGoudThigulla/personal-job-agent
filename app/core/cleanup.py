@@ -69,3 +69,4 @@ async def purge_old_records(retention_days: Optional[int] = None, preserve_appli
     except Exception:
         pass
     return summary
+
