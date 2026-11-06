@@ -1,21 +1,11 @@
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
-
-def _resolve_database_url() -> str:
-    raw = os.getenv("DATABASE_URL", "").strip()
-    if raw:
-        # Normalize PostgreSQL connection schemes for asyncpg
-        if raw.startswith("postgres://"):
-            return raw.replace("postgres://", "postgresql+asyncpg://", 1)
-        elif raw.startswith("postgresql://") and not raw.startswith("postgresql+asyncpg://"):
-            return raw.replace("postgresql://", "postgresql+asyncpg://", 1)
-        return raw
-    return f"sqlite+aiosqlite:///{DATA_DIR}/jobs.db"
 
 class Settings(BaseSettings):
     APP_NAME: str = "Personal Job Agent"
@@ -25,7 +15,19 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     
     # Storage
-    DATABASE_URL: str = _resolve_database_url()
+    DATABASE_URL: str = f"sqlite+aiosqlite:///{DATA_DIR}/jobs.db"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: Any) -> str:
+        if not v:
+            return f"sqlite+aiosqlite:///{DATA_DIR}/jobs.db"
+        val = str(v).strip()
+        if val.startswith("postgres://"):
+            return val.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif val.startswith("postgresql://") and not val.startswith("postgresql+asyncpg://"):
+            return val.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return val
 
     # Security & Single-User Auth
     APP_PASSWORD: str = os.getenv("APP_PASSWORD", "")
