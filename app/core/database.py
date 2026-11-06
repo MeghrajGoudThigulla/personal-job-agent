@@ -1,8 +1,11 @@
+import logging
 import os
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.config import settings
 from app.core.models import Base, AppSetting
+
+logger = logging.getLogger(__name__)
 
 # Resolve database URL ensuring async driver is used
 db_url = settings.DATABASE_URL
@@ -24,6 +27,8 @@ else:
     engine_kwargs["pool_pre_ping"] = True
     engine_kwargs["pool_size"] = 10
     engine_kwargs["max_overflow"] = 20
+    # Required for transaction poolers like Supabase Supavisor / PgBouncer
+    engine_kwargs["connect_args"] = {"statement_cache_size": 0}
 
 engine = create_async_engine(
     db_url,
@@ -49,8 +54,18 @@ async def init_db():
     """Initializes tables and default settings if needed."""
     # Ensure data directory exists
     os.makedirs(settings.DATA_DIR, exist_ok=True)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except OSError as e:
+        if "Network is unreachable" in str(e) or getattr(e, "errno", None) == 101:
+            logger.error(
+                "CRITICAL DATABASE CONNECTION ERROR: Network is unreachable! "
+                "If using Supabase on Render, the direct hostname (db.*.supabase.co) resolves to IPv6 only, "
+                "which Render does not route. Switch your DATABASE_URL in Render to use the Supabase IPv4 Connection Pooler: "
+                "Supabase Dashboard -> Project Settings -> Database -> Connection string -> Connection Pooler (aws-0-*.pooler.supabase.com:6543 or :5432)."
+            )
+        raise
 
 async def get_db():
     """FastAPI dependency for database sessions."""
