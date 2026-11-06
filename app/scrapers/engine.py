@@ -77,10 +77,23 @@ class ScraperEngine:
                 if not url:
                     continue
 
-                # Check deduplication
+                # 1. URL-level deduplication
                 existing = await session.execute(select(JobPosting.id).where(JobPosting.url == url))
                 if existing.scalar_one_or_none() is not None:
                     continue # Already processed
+
+                # 2. Cross-source fingerprint deduplication (same company + exact role title)
+                title_clean = (item.get("title") or "").strip()
+                company_clean = (item.get("company") or "").strip()
+                if title_clean and company_clean and company_clean.lower() != "unknown company":
+                    existing_fp = await session.execute(
+                        select(JobPosting.id).where(
+                            JobPosting.company.ilike(company_clean),
+                            JobPosting.title.ilike(title_clean)
+                        )
+                    )
+                    if existing_fp.scalar_one_or_none() is not None:
+                        continue # Already recorded from another source platform
 
                 # STAIR Match Evaluation
                 eval_res = self.matcher.evaluate_match(
