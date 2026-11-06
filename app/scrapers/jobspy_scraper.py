@@ -18,7 +18,15 @@ class JobSpyScraper(BaseScraper):
         try:
             from jobspy import scrape_jobs
             
-            search_terms = ["Python Backend Engineer", "AI Software Engineer"]
+            search_terms = [
+                "Python Backend Developer",
+                "FastAPI Developer",
+                "Python Developer 1-2 years",
+                "Full Stack Python React",
+                ".NET Developer 1-2 years",
+                "Flutter Developer",
+                "Junior Software Engineer Python"
+            ]
             for term in search_terms:
                 try:
                     df = scrape_jobs(

@@ -99,3 +99,60 @@ def test_stair_matcher_accepts_india_remote_and_onsite():
     res_rem = matcher.evaluate_match("Full Stack Engineer", "StartUp", "Remote, India", "React, TypeScript, FastAPI, PostgreSQL, 1-3 years")
     assert res_rem["score"] >= 70.0
     assert res_rem["recommendation"] == "Apply"
+
+def test_stair_matcher_excludes_experience_higher_than_3_years():
+    matcher = StairMatcher()
+    # 4+ years (Apple style)
+    res_apple = matcher.evaluate_match("Full Stack Engineer - Python", "Apple", "TS, India", "Requires 4+ years of experience in Python, React and PostgreSQL.")
+    assert res_apple["score"] <= 20.0
+    assert "Excluded" in res_apple["tier"]
+    assert "Experience" in res_apple["tier"]
+
+    # 3-5 years (Nike style)
+    res_nike = matcher.evaluate_match("Software Engineer II", "Nike", "KA, India", "Requires 3-5 years of industry experience with Python and cloud services.")
+    assert res_nike["score"] <= 20.0
+    assert "Excluded" in res_nike["tier"]
+
+    # Minimum 4 years
+    res_min4 = matcher.evaluate_match("Python Developer", "TechCorp", "MH, India", "Candidate must have minimum 4 years of experience in FastAPI and Docker.")
+    assert res_min4["score"] <= 20.0
+    assert "Excluded" in res_min4["tier"]
+
+def test_stair_matcher_3_yoe_accepted_only_if_strong_match():
+    matcher = StairMatcher()
+    # Strong match with 3 years (Python, FastAPI, React, PostgreSQL)
+    res_strong = matcher.evaluate_match("Backend Engineer", "Groww", "Bengaluru", "Seeking engineer with 3 years of experience in Python, FastAPI, React, and PostgreSQL.")
+    assert res_strong["score"] >= 70.0
+    assert res_strong["recommendation"] == "Apply"
+
+    # Weak match with 3 years (Only Python, weak preliminary score)
+    res_weak = matcher.evaluate_match("Backend Engineer", "Groww", "Bengaluru", "Seeking engineer with 3 years of experience in Python.")
+    assert res_weak["score"] <= 20.0
+    assert "Excluded" in res_weak["tier"]
+
+def test_stair_matcher_accepts_pan_india_cities_and_state_codes():
+    matcher = StairMatcher()
+    cities = [
+        ("Nagpur, MH", "Python, FastAPI, PostgreSQL, 1-2 years experience"),
+        ("Visakhapatnam, AP", "Python, React, TypeScript, 0-2 years"),
+        ("Mohali, Punjab", "Python, FastAPI, PostgreSQL, 1 year experience"),
+        ("Surat, Gujarat", "Python, Flask, Docker, 2 years experience"),
+        ("Dehradun, Uttarakhand", "React, TypeScript, FastAPI, 1-2 years"),
+        ("Kochi, Kerala", "Python, FastAPI, PostgreSQL, 0-2 years"),
+        ("TS, India", "Python, FastAPI, Docker, 1-2 years experience"),
+        ("KA, India", "Python, React, TypeScript, 1-2 years experience")
+    ]
+    for loc, desc in cities:
+        res = matcher.evaluate_match("Software Engineer", "NationalTech", loc, desc)
+        assert res["score"] >= 70.0, f"Failed for location {loc}: score={res['score']}, tier={res['tier']}"
+        assert res["recommendation"] == "Apply"
+
+def test_stair_matcher_accepts_primary_band_0_to_2_years_3_months():
+    matcher = StairMatcher()
+    res_0_2 = matcher.evaluate_match("Junior Backend Developer", "Fintech", "Hyderabad, India", "Requires 0 to 2 years of experience in Python and FastAPI.")
+    assert res_0_2["score"] >= 70.0
+    assert res_0_2["recommendation"] == "Apply"
+
+    res_1_2 = matcher.evaluate_match("Associate Software Engineer", "SaaS Co", "Pune", "1-2 years experience with Python, FastAPI, and PostgreSQL.")
+    assert res_1_2["score"] >= 75.0
+    assert res_1_2["recommendation"] == "Apply"

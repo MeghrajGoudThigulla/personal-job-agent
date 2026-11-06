@@ -132,12 +132,43 @@ class StairMatcher:
             
         return "Software Engineer", "P1"
 
-    INDIA_LOCATIONS = [
-        "india", "hyderabad", "bengaluru", "bangalore", "pune", "mumbai",
-        "gurgaon", "gurugram", "noida", "delhi", "new delhi", "chennai",
-        "coimbatore", "ahmedabad", "kolkata", "chandigarh", "kochi",
-        "kerala", "karnataka", "telangana", "maharashtra", "tamil nadu",
-        "mysore", "indore", "jaipur"
+    INDIAN_STATES = [
+        "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh",
+        "goa", "gujarat", "haryana", "himachal pradesh", "jharkhand", "karnataka",
+        "kerala", "madhya pradesh", "maharashtra", "manipur", "meghalaya", "mizoram",
+        "nagaland", "odisha", "orissa", "punjab", "rajasthan", "sikkim", "tamil nadu",
+        "telangana", "tripura", "uttar pradesh", "uttarakhand", "west bengal",
+        "delhi", "jammu and kashmir", "ladakh", "chandigarh", "puducherry"
+    ]
+
+    INDIAN_STATE_CODES = [
+        "ts", "tg", "ka", "mh", "tn", "ap", "dl", "hr", "up", "gj", "kl",
+        "wb", "rj", "mp", "pb", "od", "or", "ga", "ut", "jh", "br", "as", "ch"
+    ]
+
+    INDIAN_CITIES = [
+        # South
+        "bengaluru", "bangalore", "hyderabad", "secunderabad", "cyberabad", "chennai",
+        "kochi", "cochin", "trivandrum", "thiruvananthapuram", "calicut", "kozhikode",
+        "thrissur", "coimbatore", "madurai", "trichy", "tiruchirappalli", "salem",
+        "tirunelveli", "vellore", "hosur", "mysore", "mysuru", "mangalore", "mangaluru",
+        "hubli", "hubballi", "dharwad", "belgaum", "belagavi", "visakhapatnam", "vizag",
+        "vijayawada", "guntur", "tirupati", "kakinada", "rajahmundry", "nellore",
+        "warangal", "karimnagar", "khammam", "nizamabad", "amaravati",
+        # West & Central
+        "mumbai", "navi mumbai", "thane", "pune", "pimpri", "chinchwad", "nagpur", "nashik",
+        "aurangabad", "chhatrapati sambhajinagar", "solapur", "kolhapur", "ahmedabad",
+        "gandhinagar", "surat", "vadodara", "baroda", "rajkot", "indore", "bhopal",
+        "gwalior", "jabalpur", "panaji", "panjim", "margao", "vasco", "raipur", "bilaspur",
+        # North
+        "delhi", "new delhi", "gurgaon", "gurugram", "noida", "greater noida", "ghaziabad",
+        "faridabad", "chandigarh", "mohali", "panchkula", "ludhiana", "amritsar",
+        "jalandhar", "jaipur", "udaipur", "jodhpur", "kota", "lucknow", "kanpur",
+        "agra", "varanasi", "prayagraj", "allahabad", "bareilly", "meerut", "dehradun",
+        "haridwar", "rishikesh", "shimla", "dharamshala",
+        # East & North East
+        "kolkata", "howrah", "durgapur", "siliguri", "bhubaneswar", "cuttack", "rourkela",
+        "patna", "ranchi", "jamshedpur", "dhanbad", "guwahati", "shillong"
     ]
 
     DISQUALIFIED_REGIONS = [
@@ -150,7 +181,7 @@ class StairMatcher:
         "must reside in europe", "emea only", "latam only", "latin america only",
         "us citizen", "security clearance", "w2 only", "no c2c",
         "north america", "united states", "canada", "europe", "emea", "amer", "latam",
-        "poland", "germany", "united kingdom", "france", "australia"
+        "poland", "germany", "united kingdom", "france", "australia", "singapore"
     ]
 
     NON_INDIA_CITIES = [
@@ -174,7 +205,8 @@ class StairMatcher:
     def evaluate_location(self, location: str, description: str, title: str = "") -> Tuple[bool, float, str, str]:
         """
         Validates location feasibility according to candidate preference:
-        STRICT REQUIREMENT: India-specific jobs only (Onsite/Hybrid in India, or Remote - India).
+        STRICT REQUIREMENT: All work from office, hybrid, and remote roles from all over India.
+        Supports all Indian cities (tier 1, tier 2, tier 3), state codes (TS, KA, MH, etc.), and pan-India remote.
         Disqualifies foreign onsite, foreign remote, EMEA, AMER, US, Europe, and unrestricted global remote.
         Returns: (is_eligible, score, category, reason)
         """
@@ -188,30 +220,46 @@ class StairMatcher:
             matched_reg = re.search(r"\b(emea|amer|americas|latam|europe|us|uk|apac)\b", title_lower).group(1).upper()
             return False, 0.0, "Excluded (Restricted Region)", f"Title restricted to non-India region '{matched_reg}'"
 
-        # 1. Check standalone non-India location names
-        if loc_clean in ("europe", "emea", "amer", "americas", "latam", "united states", "us", "usa", "uk", "united kingdom", "canada", "australia", "germany", "france", "north america", "poland"):
-            return False, 0.0, "Excluded (Restricted Region)", f"Location restricted to {loc_clean.title()}"
-
-        # 2. Check for hard disqualifiers in location
-        for disq in self.DISQUALIFIED_REGIONS:
-            if re.search(rf"\b{re.escape(disq)}\b", loc_clean):
-                if not any(ind in loc_clean for ind in self.INDIA_LOCATIONS):
+        # 1. Check for foreign indicators if 'india' is not explicitly in location
+        if "india" not in loc_clean:
+            for disq in self.DISQUALIFIED_REGIONS:
+                if re.search(rf"\b{re.escape(disq)}\b", loc_clean):
                     return False, 0.0, "Excluded (Restricted Region)", f"Restricted to '{disq}'"
+            for city in self.NON_INDIA_CITIES:
+                if re.search(rf"\b{re.escape(city)}\b", loc_clean):
+                    return False, 0.0, "Excluded (Non-India Onsite)", f"Location outside India: {location}"
 
-        # 3. Check Non-India Onsite Cities
-        for city in self.NON_INDIA_CITIES:
-            if city in loc_clean and not any(ind in loc_clean for ind in self.INDIA_LOCATIONS):
-                return False, 0.0, "Excluded (Non-India Onsite)", f"Location outside India: {location}"
+        # 2. Check explicit 'india' (handles 'TS, India', 'KA, India', 'Remote - India', etc.)
+        if "india" in loc_clean:
+            if "remote" in loc_clean or "remote" in desc_sample[:300] or "work from home" in desc_sample[:300]:
+                return True, 25.0, "Remote (India)", f"Remote role anywhere in India: {location}"
+            if "hybrid" in loc_clean or "hybrid" in desc_sample[:300]:
+                return True, 25.0, "India Hybrid", f"Hybrid position in India: {location}"
+            return True, 25.0, "India Onsite (Office)", f"Work from office in India: {location}"
 
-        # 4. Check explicit India locations (Bangalore, Hyderabad, Pune, etc.)
-        for ind_term in self.INDIA_LOCATIONS:
-            if re.search(rf"\b{re.escape(ind_term)}\b", loc_clean):
+        # 3. Check all Indian cities (mainstream and non-mainstream across all states)
+        for city in self.INDIAN_CITIES:
+            if re.search(rf"\b{re.escape(city)}\b", loc_clean):
                 if "remote" in loc_clean or "remote" in desc_sample[:300]:
-                    return True, 25.0, "Remote (India)", f"Remote role based in India ({ind_term.title()})"
-                return True, 25.0, "India Onsite/Hybrid", f"India position in {ind_term.title()}"
+                    return True, 25.0, f"Remote ({city.title()})", f"Remote role based in {city.title()}"
+                if "hybrid" in loc_clean or "hybrid" in desc_sample[:300]:
+                    return True, 25.0, f"Hybrid ({city.title()})", f"Hybrid role in {city.title()}"
+                return True, 25.0, f"Onsite ({city.title()})", f"Work from office in {city.title()}"
 
-        # 5. Check if description explicitly mentions India as an allowed hiring location
-        if "india" in desc_sample[:400] or "hyderabad" in desc_sample[:400] or "bengaluru" in desc_sample[:400] or "bangalore" in desc_sample[:400]:
+        # 4. Check all Indian states (full name)
+        for state in self.INDIAN_STATES:
+            if re.search(rf"\b{re.escape(state)}\b", loc_clean):
+                if "remote" in loc_clean or "remote" in desc_sample[:300]:
+                    return True, 25.0, f"Remote ({state.title()})", f"Remote role in {state.title()}"
+                return True, 25.0, f"India Onsite ({state.title()})", f"Office/Hybrid in {state.title()}"
+
+        # 5. Check Indian state abbreviations (TS, KA, MH, TN, AP, DL, HR, UP, GJ, KL, WB, RJ, MP, PB, etc.)
+        for code in self.INDIAN_STATE_CODES:
+            if re.search(rf"\b{code}\b", loc_clean):
+                return True, 25.0, f"India ({code.upper()})", f"Position in Indian state code: {code.upper()}"
+
+        # 6. Check if description explicitly mentions India office or India remote
+        if any(ind in desc_sample[:400] for ind in ["india", "bengaluru", "bangalore", "hyderabad", "pune", "mumbai", "gurgaon", "noida", "chennai"]):
             return True, 25.0, "Remote (India)", f"India location explicitly mentioned in posting: {location}"
 
         # Disqualify all non-India, worldwide generic remote, and unrestricted foreign locations
@@ -322,35 +370,112 @@ class StairMatcher:
         potential_skills = ["kubernetes", "kafka", "graphql", "go", "java", "terraform"]
         missing_skills = [s for s in potential_skills if re.search(rf"\b{s}\b", desc_lower) and s not in found_matches]
 
-        # 4. Seniority & Experience Assessment (Max 35 pts)
-        has_heavy_yoe = bool(re.search(r"(?:5\+|6\+|7\+|8\+|10\+|12\+)\s*(?:years|yoe)|5\s*-\s*[6-9]\s*years", desc_lower))
-        if has_heavy_yoe:
-            return {
-                "score": 15.0,
-                "tier": "Excluded (Experience)",
-                "role_category": role_category,
-                "matched_skills": found_matches,
-                "missing_skills": missing_skills,
-                "location_category": loc_cat,
-                "location_feasibility": loc_detail,
-                "verdict": "Excluded: High experience requirement (5+ YOE exceeds candidate profile of 1-3 YOE)",
-                "recommendation": "Skip"
-            }
-
-        seniority_score = 30.0 # base for qualified entry-to-mid roles
-        has_mid_signal = bool(re.search(r"2-4|1-3|2-3|2\+|engineer ii|sde ii|mid-level", full_text))
-        if has_mid_signal:
-            seniority_score = 35.0 # Sweet spot for candidate
-
-        # 5. Technical Stack Alignment Score (Up to 40 pts)
+        # 4. Technical Stack Alignment Score (Up to 40 pts)
         tech_score = min(40.0, len(found_matches) * 6.0)
+
+        # 5. Seniority & Experience Assessment (Max 35 pts)
+        # Candidate rule: 0 to 2 years 3 months (0 - 2.25 YOE).
+        # Up to 3 years allowed ONLY if resume is a strong match (core stack, >=3 tech overlaps, score >= 75%).
+        # Absolutely NOTHING higher than 3 years.
+        desc_clean = re.sub(r"[0-9]+\s*(?:years?|yrs?)\s+ago", "", desc_lower)
+
+        # Tokenize experience mentions
+        range_pat = re.compile(r"\b([0-9]+(?:\.[0-9]+)?)\s*(?:-|to)\s*([0-9]+(?:\.[0-9]+)?)\s*(?:\+)?\s*(?:years?|yrs?|yoe)\b")
+        plus_pat = re.compile(r"\b([0-9]+(?:\.[0-9]+)?)\s*\+\s*(?:years?|yrs?|yoe)\b")
+        min_pat = re.compile(r"\b(?:minimum|min|at\s+least)\s+([0-9]+(?:\.[0-9]+)?)\s*(?:years?|yrs?|yoe)\b")
+        exact_pat = re.compile(r"(?:\b(?:with|have|has|having|requires?|needing)\s+)?([0-9]+(?:\.[0-9]+)?)\s*(?:years?|yrs?|yoe)\s+(?:of\s+)?(?:relevant\s+|hands-on\s+|industry\s+|professional\s+|work\s+)?experience\b")
+
+        yoe_tokens = []
+        def _mask_range(m):
+            yoe_tokens.append(("range", float(m.group(1)), float(m.group(2)), m.group(0)))
+            return " " * len(m.group(0))
+
+        masked_text = range_pat.sub(_mask_range, desc_clean)
+
+        for m in plus_pat.finditer(masked_text):
+            val = float(m.group(1))
+            yoe_tokens.append(("plus", val, val + 2.0, m.group(0)))
+
+        for m in min_pat.finditer(masked_text):
+            val = float(m.group(1))
+            yoe_tokens.append(("min", val, val, m.group(0)))
+
+        for m in exact_pat.finditer(masked_text):
+            val = float(m.group(1))
+            yoe_tokens.append(("exact", val, val, m.group(0)))
+
+        # Rule 1: Strictly > 3 years ceiling ("nothing higher than 3")
+        for kind, low, high, raw in yoe_tokens:
+            if kind in ("plus", "min", "exact") and low > 3.0:
+                return {
+                    "score": 15.0,
+                    "tier": "Excluded (Experience > 3 YOE)",
+                    "role_category": role_category,
+                    "matched_skills": found_matches,
+                    "missing_skills": missing_skills,
+                    "location_category": loc_cat,
+                    "location_feasibility": loc_detail,
+                    "verdict": f"Excluded: Required experience ({raw}) strictly exceeds candidate ceiling of 3 years",
+                    "recommendation": "Skip"
+                }
+            if kind == "range":
+                if low > 3.0 or (low >= 3.0 and high > 3.0) or (low > 2.25 and high > 3.0):
+                    return {
+                        "score": 15.0,
+                        "tier": "Excluded (Experience > 3 YOE)",
+                        "role_category": role_category,
+                        "matched_skills": found_matches,
+                        "missing_skills": missing_skills,
+                        "location_category": loc_cat,
+                        "location_feasibility": loc_detail,
+                        "verdict": f"Excluded: Required experience range ({raw}) strictly exceeds candidate ceiling of 3 years",
+                        "recommendation": "Skip"
+                    }
+
+        # Rule 2: ~3 YOE checks ("or 3 if my resume is a strong match")
+        prelim_score = 30.0 + tech_score + loc_score
+        is_strong_match = has_primary_core and (len(found_matches) >= 3) and (prelim_score >= 75.0)
+
+        requires_strong = False
+        strong_reason = ""
+        for kind, low, high, raw in yoe_tokens:
+            if kind in ("plus", "min", "exact") and 2.25 < low <= 3.0:
+                requires_strong = True
+                strong_reason = raw
+                break
+            if kind == "range" and (high > 2.25 or (low <= 2.25 and high >= 3.0)):
+                requires_strong = True
+                strong_reason = raw
+                break
+
+        if requires_strong:
+            if not is_strong_match:
+                return {
+                    "score": 15.0,
+                    "tier": "Excluded (Experience 3 YOE - Needs Strong Match)",
+                    "role_category": role_category,
+                    "matched_skills": found_matches,
+                    "missing_skills": missing_skills,
+                    "location_category": loc_cat,
+                    "location_feasibility": loc_detail,
+                    "verdict": f"Excluded: Role asks for ~3 YOE ({strong_reason}), but candidate profile is not a strong match (needs score >= 75% with core stack)",
+                    "recommendation": "Skip"
+                }
+            seniority_score = 30.0
+            exp_note = f"~3 YOE ({strong_reason}) accepted due to strong stack match ({prelim_score}%)"
+        else:
+            # 0 to 2 years 3 months primary band
+            has_primary_band = bool(re.search(r"0-2|0\s*to\s*2|1-2|1\s*to\s*2|0-1|0\s*to\s*1|fresher|junior|associate", full_text))
+            seniority_score = 35.0 if has_primary_band else 30.0
+            exp_note = "Within candidate primary band (0 to 2 years 3 months)"
+            exp_note = "Within candidate primary band (0 to 2 years 3 months)"
 
         # Total STAIR score (Seniority max 35 + Tech max 40 + Location max 25 = 100 max)
         total_score = min(100.0, round(seniority_score + tech_score + loc_score, 1))
 
         verdict = (
             f"Role matched as {role_category} ({tier}). Location: {loc_cat}. "
-            f"Found {len(found_matches)} core stack overlaps ({', '.join(found_matches[:5])})."
+            f"Experience: {exp_note}. Found {len(found_matches)} core stack overlaps ({', '.join(found_matches[:5])})."
         )
 
         return {
