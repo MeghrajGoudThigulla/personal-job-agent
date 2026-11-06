@@ -93,10 +93,20 @@ class SearchDorksScraper(BaseScraper):
                     parts = raw_url.split("lever.co/")[1].split("/")
                     if parts: company_guess = parts[0].replace("-", " ").title()
 
+                # Extract location from snippet or title; never fabricate India
+                detected_location = "Unknown"
+                snippet_lower = f"{title_text} {snippet_text}".lower()
+                for ind in ["bengaluru", "bangalore", "hyderabad", "pune", "mumbai", "gurgaon", "gurugram", "noida", "chennai", "delhi", "india"]:
+                    if ind in snippet_lower:
+                        detected_location = f"{ind.title()}, India" if ind != "india" else "India"
+                        break
+                if "remote" in snippet_lower and "india" in snippet_lower:
+                    detected_location = "Remote - India"
+
                 results.append({
                     "title": title_text,
                     "company": company_guess,
-                    "location": "India / Remote",
+                    "location": detected_location,
                     "remote_status": "Remote" if "remote" in snippet_text.lower() or "remote" in title_text.lower() else "Hybrid/Onsite",
                     "url": raw_url,
                     "source_platform": "SearchDork",

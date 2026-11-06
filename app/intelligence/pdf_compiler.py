@@ -95,12 +95,15 @@ class PDFCompiler:
         # 3. Generate HTML printable fallback
         self._generate_html_resume(latex_content, html_path, filename_base)
         
+        pdf_generated = pdf_path.exists()
         return {
             "success": True,
-            "pdf_path": str(pdf_path) if pdf_path.exists() else str(html_path),
-            "tex_path": str(tex_path),
+            "pdf_generated": pdf_generated,
+            "artifact_type": "pdf" if pdf_generated else "html",
+            "pdf_path": str(pdf_path) if pdf_generated else str(html_path),
             "html_path": str(html_path),
-            "message": "LaTeX source saved. Printable HTML version generated (LaTeX engine available in Docker/Render container)."
+            "tex_path": str(tex_path),
+            "message": "Compiled successfully with XeLaTeX." if pdf_generated else "LaTeX engine unavailable or compilation failed; printable HTML resume generated."
         }
 
     def _generate_html_resume(self, latex_content: str, output_path: Path, title: str):

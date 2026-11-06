@@ -196,6 +196,31 @@ class StairMatcher:
         "asp.net core", "flutter", "react", "next.js", "nextjs", "typescript"
     ]
 
+    SPECIALIZED_TOOLS = [
+        "postgresql", "postgres", "redis", "docker", "celery", "prisma", "alembic",
+        "signalr", "mediatr", "clean architecture", "cqrs", "onnx", "ocr", "paddleocr",
+        "embeddings", "rag", "supabase"
+    ]
+
+    GENERIC_TOOLS = [
+        "sql", "rest", "api", "aws", "gcp", "render", "linux", "git", "websockets"
+    ]
+
+    @staticmethod
+    def match_skill(skill: str, text: str) -> bool:
+        """Punctuation-safe skill matcher handling C#, .NET, C++, and standard word boundaries."""
+        s = skill.lower()
+        if s == "c#":
+            return bool(re.search(r"(?<![\w])c#(?![\w])", text))
+        elif s in (".net", ".net core", "asp.net core", "asp.net", ".net 8"):
+            return bool(re.search(r"(?<![\w])(?:\.net|asp\.net)(?:\s*(?:8|core|\b))?(?![\w])", text))
+        elif s == "c++":
+            return bool(re.search(r"(?<![\w])c\+\+(?![\w])", text))
+        elif s in ("next.js", "nextjs"):
+            return bool(re.search(r"\bnext(?:\.js|js)\b", text))
+        else:
+            return bool(re.search(rf"\b{re.escape(s)}\b", text))
+
     DISQUALIFIED_PRIMARY_STACKS = [
         r"\bjava\b", r"\bspring\s+boot\b", r"\bspring\b", r"\bgolang\b",
         r"\brust\b", r"\bruby\b", r"\bruby\s+on\s+rails\b", r"\brails\b",
@@ -334,24 +359,34 @@ class StairMatcher:
                 "recommendation": "Skip"
             }
 
-        # 3. Technical Stack Alignment
+        # 3. Technical Stack Alignment with Weighted Skill Taxonomy
+        # Weight 5: Primary Core Skills (Python, FastAPI, C#, .NET, React, TypeScript, Flutter)
+        # Weight 3: Databases & Specialized Tools (Postgres, Redis, Docker, Celery, Prisma, etc.)
+        # Weight 1: Generic & Auxiliary Tools (SQL, REST, API, Git, Linux, AWS, GCP)
         found_matches = []
-        key_tech_to_scan = [
-            "python", "fastapi", "flask", "c#", ".net", "asp.net", "postgresql",
-            "redis", "celery", "docker", "flutter", "react", "next.js", "typescript",
-            "sql", "rest", "api", "signalr", "mediatr", "clean architecture", "cqrs",
-            "supabase", "aws", "gcp", "render", "linux", "onnx", "ocr", "embeddings",
-            "alembic", "prisma", "websockets"
-        ]
+        weighted_points = 0.0
 
-        for tech in key_tech_to_scan:
-            pattern = rf"\b{re.escape(tech)}\b"
-            if re.search(pattern, desc_lower):
-                found_matches.append(tech)
+        for ps in self.PRIMARY_CORE_SKILLS:
+            if self.match_skill(ps, desc_lower) or self.match_skill(ps, title_lower):
+                if ps not in found_matches:
+                    found_matches.append(ps)
+                    weighted_points += 10.0 # Weight 5
+
+        for st in self.SPECIALIZED_TOOLS:
+            if self.match_skill(st, desc_lower):
+                if st not in found_matches:
+                    found_matches.append(st)
+                    weighted_points += 4.5 # Weight 3
+
+        for gt in self.GENERIC_TOOLS:
+            if self.match_skill(gt, desc_lower):
+                if gt not in found_matches:
+                    found_matches.append(gt)
+                    weighted_points += 1.5 # Weight 1
 
         # Candidate MUST have at least one primary core stack match (Python, C#/.NET, React, Flutter, etc.)
         has_primary_core = any(
-            re.search(rf"\b{re.escape(ps)}\b", desc_lower) or re.search(rf"\b{re.escape(ps)}\b", title_lower)
+            self.match_skill(ps, desc_lower) or self.match_skill(ps, title_lower)
             for ps in self.PRIMARY_CORE_SKILLS
         )
         if not has_primary_core:
@@ -371,7 +406,7 @@ class StairMatcher:
         missing_skills = [s for s in potential_skills if re.search(rf"\b{s}\b", desc_lower) and s not in found_matches]
 
         # 4. Technical Stack Alignment Score (Up to 40 pts)
-        tech_score = min(40.0, len(found_matches) * 6.0)
+        tech_score = min(40.0, round(weighted_points, 1))
 
         # 5. Seniority & Experience Assessment (Max 35 pts)
         # Candidate rule: 0 to 2 years 3 months (0 - 2.25 YOE).

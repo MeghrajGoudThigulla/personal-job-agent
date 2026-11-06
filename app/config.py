@@ -6,6 +6,17 @@ from pydantic_settings import BaseSettings
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 
+def _resolve_database_url() -> str:
+    raw = os.getenv("DATABASE_URL", "").strip()
+    if raw:
+        # Normalize PostgreSQL connection schemes for asyncpg
+        if raw.startswith("postgres://"):
+            return raw.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif raw.startswith("postgresql://") and not raw.startswith("postgresql+asyncpg://"):
+            return raw.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return raw
+    return f"sqlite+aiosqlite:///{DATA_DIR}/jobs.db"
+
 class Settings(BaseSettings):
     APP_NAME: str = "Personal Job Agent"
     ENV: str = "production"
@@ -14,7 +25,11 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     
     # Storage
-    DATABASE_URL: str = f"sqlite+aiosqlite:///{DATA_DIR}/jobs.db"
+    DATABASE_URL: str = _resolve_database_url()
+
+    # Security & Single-User Auth
+    APP_PASSWORD: str = os.getenv("APP_PASSWORD", "")
+    ADMIN_SESSION_COOKIE: str = "pja_session"
     
     # Scheduler
     SCHEDULER_ENABLED: bool = True

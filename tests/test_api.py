@@ -91,3 +91,36 @@ async def test_scraper_queries_endpoint():
         data = res.json()
         assert "roles" in data
         assert len(data["roles"]) == 11
+
+@pytest.mark.asyncio
+async def test_auth_enforcement_when_password_set():
+    from app.config import settings
+    # Set APP_PASSWORD
+    settings.APP_PASSWORD = "supersecretpassword123"
+    transport = ASGITransport(app=app)
+
+    try:
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            # 1. Health check is always public (200)
+            res_health = await ac.get("/health")
+            assert res_health.status_code == 200
+
+            # 2. Unauthenticated API call returns 401
+            res_api = await ac.get("/api/scraper/queries")
+            assert res_api.status_code == 401
+
+            # 3. Unauthenticated Web UI redirects to /login (303)
+            res_ui = await ac.get("/", follow_redirects=False)
+            assert res_ui.status_code == 303
+            assert res_ui.headers["location"] == "/login"
+
+            # 4. Authenticated API call with Bearer succeeds (200)
+            res_auth_api = await ac.get("/api/scraper/queries", headers={"Authorization": f"Bearer {settings.APP_PASSWORD}"})
+            assert res_auth_api.status_code == 200
+
+            # 5. Authenticated Web UI call with Session Cookie succeeds (200)
+            res_auth_ui = await ac.get("/", cookies={settings.ADMIN_SESSION_COOKIE: settings.APP_PASSWORD})
+            assert res_auth_ui.status_code == 200
+    finally:
+        # Reset password to blank for other tests
+        settings.APP_PASSWORD = ""

@@ -9,7 +9,11 @@ class SlackNotifier:
     """Sends Slack block alerts."""
 
     def __init__(self, webhook_url: Optional[str] = None):
-        self.webhook_url = webhook_url or settings.SLACK_WEBHOOK_URL
+        self._override_webhook_url = webhook_url
+
+    @property
+    def webhook_url(self) -> str:
+        return self._override_webhook_url or settings.SLACK_WEBHOOK_URL
 
     @property
     def is_configured(self) -> bool:

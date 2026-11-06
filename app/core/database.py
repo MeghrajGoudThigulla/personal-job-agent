@@ -4,14 +4,23 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from app.config import settings
 from app.core.models import Base, AppSetting
 
-# Create async engine with SQLite WAL mode and busy timeout for high concurrency
-connect_args = {"timeout": 60} if "sqlite" in settings.DATABASE_URL else {}
+# Configure engine parameters depending on DB backend (SQLite vs PostgreSQL)
+engine_kwargs = {
+    "echo": settings.DEBUG,
+    "future": True
+}
+
+if "sqlite" in settings.DATABASE_URL:
+    engine_kwargs["connect_args"] = {"timeout": 60}
+else:
+    # Production PostgreSQL pool configuration
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 20
 
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    future=True,
-    connect_args=connect_args
+    **engine_kwargs
 )
 
 if "sqlite" in settings.DATABASE_URL:

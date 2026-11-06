@@ -88,6 +88,19 @@ def test_stair_matcher_excludes_java_spring_stack():
     assert res_generic["score"] <= 20.0
     assert "Excluded" in res_generic["tier"]
 
+def test_stair_matcher_matches_csharp_and_dotnet():
+    matcher = StairMatcher()
+    res = matcher.evaluate_match(
+        title=".NET Backend Developer",
+        company="Cognizant",
+        location="Hyderabad, India",
+        description="Looking for an engineer with 1-2 years experience in C#, .NET 8, ASP.NET Core, and PostgreSQL."
+    )
+    assert res["score"] >= 75.0
+    assert "c#" in res["matched_skills"]
+    assert any(".net" in s for s in res["matched_skills"])
+    assert res["recommendation"] == "Apply"
+
 def test_stair_matcher_accepts_india_remote_and_onsite():
     matcher = StairMatcher()
     # Hyderabad onsite

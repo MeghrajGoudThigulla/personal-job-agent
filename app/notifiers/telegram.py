@@ -10,8 +10,16 @@ class TelegramNotifier:
     """Sends real-time job alerts to Meghraj via Telegram Bot."""
 
     def __init__(self, bot_token: Optional[str] = None, chat_id: Optional[str] = None):
-        self.bot_token = bot_token or settings.TELEGRAM_BOT_TOKEN
-        self.chat_id = chat_id or settings.TELEGRAM_CHAT_ID
+        self._override_token = bot_token
+        self._override_chat_id = chat_id
+
+    @property
+    def bot_token(self) -> str:
+        return self._override_token or settings.TELEGRAM_BOT_TOKEN
+
+    @property
+    def chat_id(self) -> str:
+        return self._override_chat_id or settings.TELEGRAM_CHAT_ID
 
     @property
     def is_configured(self) -> bool:
@@ -59,6 +67,9 @@ class TelegramNotifier:
                 await log_audit_event("telegram_notification", {"job_id": job_id, "company": company}, "success")
                 return True
         except Exception as e:
-            logger.error(f"Failed to send Telegram notification: {e}")
-            await log_audit_event("telegram_notification", {"job_id": job_id, "error": str(e)}, "error")
+            raw_err = str(e)
+            token = self.bot_token
+            sanitized_err = raw_err.replace(token, "[REDACTED_BOT_TOKEN]") if token else raw_err
+            logger.error(f"Failed to send Telegram notification: {sanitized_err}")
+            await log_audit_event("telegram_notification", {"job_id": job_id, "error": sanitized_err}, "error")
             return False

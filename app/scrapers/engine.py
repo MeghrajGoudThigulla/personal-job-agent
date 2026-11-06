@@ -130,11 +130,38 @@ class ScraperEngine:
             await session.commit()
 
         # Phase 2: Dispatch notifications and tailor resumes WITHOUT holding open DB locks
-        # Prioritize highest match scores first and throttle to top 5 per cycle to prevent LLM rate limits (429)
-        high_match_items.sort(key=lambda x: x["eval_res"].get("score", 0.0), reverse=True)
-        items_to_process = high_match_items[:5]
+        # DB-backed queue: Pick up unnotified high-match jobs ordered by score descending.
+        # This processes up to 5 per cycle to prevent LLM rate limits (429) without starving any backlog.
+        pending_jobs = []
+        async with async_session_factory() as session:
+            stmt = (
+                select(JobPosting)
+                .where(
+                    JobPosting.match_score >= settings.MIN_MATCH_SCORE_NOTIFY,
+                    JobPosting.notified == False
+                )
+                .order_by(JobPosting.match_score.desc(), JobPosting.discovered_at.desc())
+                .limit(5)
+            )
+            res = await session.execute(stmt)
+            for j in res.scalars().all():
+                eval_meta = {}
+                try:
+                    if j.match_reason:
+                        eval_meta = json.loads(j.match_reason)
+                except Exception:
+                    pass
+                pending_jobs.append({
+                    "job_id": j.id,
+                    "job_dict": j.to_dict(),
+                    "eval_res": eval_meta,
+                    "title": j.title,
+                    "company": j.company,
+                    "url": j.url,
+                    "description": j.description
+                })
 
-        for hm in items_to_process:
+        for hm in pending_jobs:
             alert_payload = hm["job_dict"]
             alert_payload["matched_skills"] = hm["eval_res"].get("matched_skills", [])
 

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import List, Dict, Any
 from app.scrapers.base import BaseScraper
@@ -29,7 +30,8 @@ class JobSpyScraper(BaseScraper):
             ]
             for term in search_terms:
                 try:
-                    df = scrape_jobs(
+                    df = await asyncio.to_thread(
+                        scrape_jobs,
                         site_name=["indeed", "glassdoor"],
                         search_term=term,
                         location="India",

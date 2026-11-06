@@ -74,8 +74,86 @@ if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 # -------------------------------------------------------------
+# Security & Single-User Authentication Middleware
+# -------------------------------------------------------------
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    if settings.APP_PASSWORD:
+        path = request.url.path
+        # Public endpoints that never require auth
+        if path == "/health" or path == "/login" or path.startswith("/static"):
+            return await call_next(request)
+
+        # Check Authorization header, X-API-Key, or secure Session Cookie
+        auth_header = request.headers.get("Authorization", "")
+        token = auth_header.split(" ", 1)[1].strip() if auth_header.startswith("Bearer ") else ""
+        api_key = request.headers.get("X-API-Key", "")
+        session_cookie = request.cookies.get(settings.ADMIN_SESSION_COOKIE, "")
+
+        if token == settings.APP_PASSWORD or api_key == settings.APP_PASSWORD or session_cookie == settings.APP_PASSWORD:
+            return await call_next(request)
+
+        if path.startswith("/api/"):
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized: Valid APP_PASSWORD required"})
+        
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/login", status_code=303)
+
+    return await call_next(request)
+
+# -------------------------------------------------------------
 # Web UI Routes
 # -------------------------------------------------------------
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_view(request: Request):
+    return HTMLResponse("""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login · Project Veronica</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-gray-800 border border-gray-700 p-8 rounded-xl shadow-2xl max-w-sm w-full space-y-5">
+        <div class="text-center">
+            <h1 class="text-2xl font-black text-indigo-400">PROJECT VERONICA</h1>
+            <p class="text-xs text-gray-400 mt-1">Meghraj's Autonomous Job Search Agent</p>
+        </div>
+        <form method="POST" action="/login" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">Access Password</label>
+                <input type="password" name="password" placeholder="Enter APP_PASSWORD" required
+                       class="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-indigo-500/30 transition">
+                Authenticate
+            </button>
+        </form>
+    </div>
+</body>
+</html>""")
+
+@app.post("/login")
+async def login_submit(request: Request):
+    from fastapi.responses import RedirectResponse
+    form = await request.form()
+    password = form.get("password", "")
+    if password == settings.APP_PASSWORD:
+        resp = RedirectResponse(url="/", status_code=303)
+        resp.set_cookie(key=settings.ADMIN_SESSION_COOKIE, value=password, httponly=True, max_age=86400 * 30, samesite="lax")
+        return resp
+    raise HTTPException(status_code=401, detail="Invalid password")
+
+@app.get("/logout")
+async def logout_view():
+    from fastapi.responses import RedirectResponse
+    resp = RedirectResponse(url="/login", status_code=303)
+    resp.delete_cookie(settings.ADMIN_SESSION_COOKIE)
+    return resp
 
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def dashboard_view(
