@@ -148,31 +148,34 @@ class StairMatcher:
         "north america only", "uk only", "united kingdom only", "must reside in uk",
         "must be in uk", "canada only", "australia only", "europe only", "eu only",
         "must reside in europe", "emea only", "latam only", "latin america only",
-        "us citizen", "security clearance", "w2 only", "no c2c"
-    ]
-
-    GLOBAL_REMOTE_KEYWORDS = [
-        "worldwide", "anywhere", "remote worldwide", "remote (worldwide)",
-        "remote anywhere", "remote (anywhere)", "work from anywhere",
-        "global remote", "remote (global)", "any location", "fully remote",
-        "100% remote", "remote - anywhere", "all locations"
+        "us citizen", "security clearance", "w2 only", "no c2c",
+        "north america", "united states", "canada", "europe", "emea", "amer", "latam",
+        "poland", "germany", "united kingdom", "france", "australia"
     ]
 
     NON_INDIA_CITIES = [
         "san francisco", "new york", "nyc", "seattle", "austin", "chicago",
         "los angeles", "boston", "london", "berlin", "amsterdam", "paris",
         "dublin", "munich", "toronto", "vancouver", "sydney", "melbourne",
-        "singapore", "tokyo", "zurich"
+        "singapore", "tokyo", "zurich", "warsaw", "krakow", "dubai"
+    ]
+
+    PRIMARY_CORE_SKILLS = [
+        "python", "fastapi", "flask", "c#", ".net", ".net 8", "asp.net",
+        "asp.net core", "flutter", "react", "next.js", "nextjs", "typescript"
+    ]
+
+    DISQUALIFIED_PRIMARY_STACKS = [
+        r"\bjava\b", r"\bspring\s+boot\b", r"\bspring\b", r"\bgolang\b",
+        r"\brust\b", r"\bruby\b", r"\bruby\s+on\s+rails\b", r"\brails\b",
+        r"\bphp\b", r"\blaravel\b", r"\bscala\b", r"\bsalesforce\b", r"\bapex\b"
     ]
 
     def evaluate_location(self, location: str, description: str, title: str = "") -> Tuple[bool, float, str, str]:
         """
         Validates location feasibility according to candidate preference:
-        1. India-specific jobs (Onsite/Hybrid in Hyderabad, Bangalore, Pune, etc.)
-        2. Remote from India (Remote - India, APAC)
-        3. Remote from anywhere (Worldwide / Global / Unrestricted Remote)
-        
-        Disqualifies jobs restricted to other regions (US only, UK only, EMEA, AMER, Europe, non-India onsite).
+        STRICT REQUIREMENT: India-specific jobs only (Onsite/Hybrid in India, or Remote - India).
+        Disqualifies foreign onsite, foreign remote, EMEA, AMER, US, Europe, and unrestricted global remote.
         Returns: (is_eligible, score, category, reason)
         """
         loc_clean = (location or "").lower().strip()
@@ -181,54 +184,38 @@ class StairMatcher:
         combined = f"{title_lower} {loc_clean} {desc_sample}"
 
         # 0. Check regional tags in Title (e.g. "Support Engineer (EMEA)" or "(AMER)" or "(Europe)")
-        if re.search(r"\b(emea|amer|americas|latam)\b", title_lower) and not re.search(r"\b(apac|india)\b", title_lower):
-            matched_reg = re.search(r"\b(emea|amer|americas|latam)\b", title_lower).group(1).upper()
-            return False, 0.0, "Excluded (Restricted Region)", f"Title restricted to regional shift '{matched_reg}'"
+        if re.search(r"\b(emea|amer|americas|latam|europe|us|uk|apac)\b", title_lower) and not re.search(r"\b(india)\b", title_lower):
+            matched_reg = re.search(r"\b(emea|amer|americas|latam|europe|us|uk|apac)\b", title_lower).group(1).upper()
+            return False, 0.0, "Excluded (Restricted Region)", f"Title restricted to non-India region '{matched_reg}'"
 
-        # 1. Check standalone non-India location names (e.g. location="Europe" or "EMEA")
-        if loc_clean in ("europe", "emea", "amer", "americas", "latam", "united states", "us", "usa", "uk", "united kingdom", "canada", "australia", "germany", "france"):
+        # 1. Check standalone non-India location names
+        if loc_clean in ("europe", "emea", "amer", "americas", "latam", "united states", "us", "usa", "uk", "united kingdom", "canada", "australia", "germany", "france", "north america", "poland"):
             return False, 0.0, "Excluded (Restricted Region)", f"Location restricted to {loc_clean.title()}"
 
-        # 2. Check for hard disqualifiers in description / location
+        # 2. Check for hard disqualifiers in location
         for disq in self.DISQUALIFIED_REGIONS:
-            if re.search(rf"\b{re.escape(disq)}\b", combined):
-                # If 'india' is explicitly included as an alternative, don't disqualify
-                if "india" not in loc_clean and "india" not in desc_sample[:300]:
+            if re.search(rf"\b{re.escape(disq)}\b", loc_clean):
+                if not any(ind in loc_clean for ind in self.INDIA_LOCATIONS):
                     return False, 0.0, "Excluded (Restricted Region)", f"Restricted to '{disq}'"
 
-        # 3. Check India-specific or India Remote
+        # 3. Check Non-India Onsite Cities
+        for city in self.NON_INDIA_CITIES:
+            if city in loc_clean and not any(ind in loc_clean for ind in self.INDIA_LOCATIONS):
+                return False, 0.0, "Excluded (Non-India Onsite)", f"Location outside India: {location}"
+
+        # 4. Check explicit India locations (Bangalore, Hyderabad, Pune, etc.)
         for ind_term in self.INDIA_LOCATIONS:
             if re.search(rf"\b{re.escape(ind_term)}\b", loc_clean):
-                if "remote" in loc_clean or "remote" in desc_sample:
+                if "remote" in loc_clean or "remote" in desc_sample[:300]:
                     return True, 25.0, "Remote (India)", f"Remote role based in India ({ind_term.title()})"
                 return True, 25.0, "India Onsite/Hybrid", f"India position in {ind_term.title()}"
 
-        # 4. Check APAC / Asia-Pacific (India-inclusive region)
-        if any(term in loc_clean or term in title_lower or term in desc_sample[:500] for term in ["apac", "asia-pacific", "south asia", "remote - asia", "remote (apac)"]):
-            return True, 25.0, "Remote (APAC / India)", "Remote eligible for India / APAC candidates"
+        # 5. Check if description explicitly mentions India as an allowed hiring location
+        if "india" in desc_sample[:400] or "hyderabad" in desc_sample[:400] or "bengaluru" in desc_sample[:400] or "bangalore" in desc_sample[:400]:
+            return True, 25.0, "Remote (India)", f"India location explicitly mentioned in posting: {location}"
 
-        # 5. Check Explicit Worldwide / Global / Anywhere
-        for gw in self.GLOBAL_REMOTE_KEYWORDS:
-            if gw in loc_clean or gw in title_lower or gw in desc_sample[:600]:
-                return True, 25.0, "Remote (Worldwide / Anywhere)", f"Remote worldwide opportunity ({gw})"
-
-        # 6. Check Unrestricted "Remote"
-        if loc_clean in ("remote", "remote - global", "flexible", "work from home", "remote-first") or loc_clean.startswith("remote"):
-            # Ensure description doesn't secretly require US/European presence
-            if not any(non_ind in desc_sample[:600] for non_ind in ["united states", "north america", "must be based in"]):
-                return True, 25.0, "Remote (Worldwide)", "Unrestricted Remote position"
-
-        # 7. Check Non-India Onsite Cities (e.g. San Francisco, London, Berlin)
-        for city in self.NON_INDIA_CITIES:
-            if city in loc_clean and "india" not in loc_clean:
-                return False, 0.0, "Excluded (Non-India Onsite)", f"Onsite/Hybrid outside India: {location}"
-
-        # 8. Check if description mentions India as an option
-        if "india" in desc_sample[:500] or "hyderabad" in desc_sample[:500] or "bengaluru" in desc_sample[:500]:
-            return True, 25.0, "Remote (India)", f"India location mentioned in posting: {location}"
-
-        # If location is completely foreign or unknown with no remote/India context
-        return False, 0.0, "Excluded (Location Mismatch)", f"Location '{location}' is neither India nor Worldwide Remote"
+        # Disqualify all non-India, worldwide generic remote, and unrestricted foreign locations
+        return False, 0.0, "Excluded (Location Mismatch)", f"Location '{location}' is not located in or hiring from India"
 
     def evaluate_match(self, title: str, company: str, location: str, description: str) -> Dict[str, Any]:
         """
@@ -245,9 +232,14 @@ class StairMatcher:
         hard_disqualifiers = [
             r"\bintern\b", r"\binternship\b", r"\btrainee\b", r"\bfresher\b",
             r"\b0\s*years\b", r"\b0-1\s*years?\b",
-            r"\bstaff\s+engineer\b", r"\bprincipal\s+engineer\b",
-            r"\bengineering\s+manager\b", r"\bvp\s+of\s+engineering\b",
-            r"\bdirector\s+of\s+engineering\b"
+            r"\bsenior\b", r"\bsr\.?\b", r"\blead\b", r"\barchitect\b",
+            r"\bstaff\b", r"\bprincipal\b",
+            r"\bengineering\s+manager\b", r"\bmanager\b", r"\bvp\b", r"\bdirector\b",
+            r"\bhead\s+of\b", r"\bl5\b", r"\bl6\b", r"\bl7\b",
+            r"\bsde\s+iii\b", r"\bsoftware\s+engineer\s+iii\b", r"\bengineer\s+iii\b",
+            r"\bqa\b", r"\bsdet\b", r"\btest\s+engineer\b", r"\bquality\s+assurance\b",
+            r"\bautomation\s+tester\b", r"\bsecurity\s+engineer\b", r"\binfosec\b",
+            r"\bembedded\b", r"\bfirmware\b", r"\bhardware\b"
         ]
         
         for disq in hard_disqualifiers:
@@ -256,7 +248,7 @@ class StairMatcher:
                     "score": 15.0,
                     "tier": "Excluded",
                     "role_category": role_category,
-                    "verdict": f"Excluded due to title level match: '{disq}'",
+                    "verdict": f"Excluded due to title level/role disqualifier: '{disq}'",
                     "matched_skills": [],
                     "missing_skills": [],
                     "location_category": "Excluded",
@@ -264,9 +256,36 @@ class StairMatcher:
                     "recommendation": "Skip"
                 }
 
-        # 2. Location Feasibility Gate (India, Remote from India, or Remote from Anywhere)
+        # Check for disqualified primary tech in title (e.g. Java Engineer, Go Engineer)
+        for disq_tech in self.DISQUALIFIED_PRIMARY_STACKS:
+            if re.search(disq_tech, title_lower):
+                return {
+                    "score": 15.0,
+                    "tier": "Excluded (Tech Mismatch)",
+                    "role_category": role_category,
+                    "verdict": f"Excluded due to non-matching primary tech in title: '{disq_tech}'",
+                    "matched_skills": [],
+                    "missing_skills": [],
+                    "location_category": "Excluded",
+                    "location_feasibility": "Tech Disqualified",
+                    "recommendation": "Skip"
+                }
+
+        # 2. Location Feasibility Gate (Strictly India Only)
         is_loc_eligible, loc_score, loc_cat, loc_detail = self.evaluate_location(location, description, title=title)
-        
+        if not is_loc_eligible:
+            return {
+                "score": 15.0,
+                "tier": "Excluded (Location)",
+                "role_category": role_category,
+                "matched_skills": [],
+                "missing_skills": [],
+                "location_category": loc_cat,
+                "location_feasibility": loc_detail,
+                "verdict": f"Excluded due to location: {loc_detail}",
+                "recommendation": "Skip"
+            }
+
         # 3. Technical Stack Alignment
         found_matches = []
         key_tech_to_scan = [
@@ -282,38 +301,49 @@ class StairMatcher:
             if re.search(pattern, desc_lower):
                 found_matches.append(tech)
 
+        # Candidate MUST have at least one primary core stack match (Python, C#/.NET, React, Flutter, etc.)
+        has_primary_core = any(
+            re.search(rf"\b{re.escape(ps)}\b", desc_lower) or re.search(rf"\b{re.escape(ps)}\b", title_lower)
+            for ps in self.PRIMARY_CORE_SKILLS
+        )
+        if not has_primary_core:
+            return {
+                "score": 15.0,
+                "tier": "Excluded (Tech Mismatch)",
+                "role_category": role_category,
+                "matched_skills": found_matches,
+                "missing_skills": self.PRIMARY_CORE_SKILLS[:4],
+                "location_category": loc_cat,
+                "location_feasibility": loc_detail,
+                "verdict": "Excluded: Job does not require any core resume technology (Python, C#/.NET, React/TypeScript, Flutter)",
+                "recommendation": "Skip"
+            }
+
         potential_skills = ["kubernetes", "kafka", "graphql", "go", "java", "terraform"]
         missing_skills = [s for s in potential_skills if re.search(rf"\b{s}\b", desc_lower) and s not in found_matches]
 
-        # If location is disqualified, drop score to 15.0 and mark as Excluded
-        if not is_loc_eligible:
+        # 4. Seniority & Experience Assessment (Max 35 pts)
+        has_heavy_yoe = bool(re.search(r"(?:5\+|6\+|7\+|8\+|10\+|12\+)\s*(?:years|yoe)|5\s*-\s*[6-9]\s*years", desc_lower))
+        if has_heavy_yoe:
             return {
                 "score": 15.0,
-                "tier": "Excluded (Location)",
+                "tier": "Excluded (Experience)",
                 "role_category": role_category,
                 "matched_skills": found_matches,
                 "missing_skills": missing_skills,
                 "location_category": loc_cat,
                 "location_feasibility": loc_detail,
-                "verdict": f"Excluded due to location: {loc_detail}",
+                "verdict": "Excluded: High experience requirement (5+ YOE exceeds candidate profile of 1-3 YOE)",
                 "recommendation": "Skip"
             }
 
-        # 4. Seniority Assessment (Up to 35 pts)
-        seniority_score = 25.0 # base
-        is_senior = bool(re.search(r"\bsenior\b|\bsr\.\b", title_lower))
+        seniority_score = 30.0 # base for qualified entry-to-mid roles
         has_mid_signal = bool(re.search(r"2-4|1-3|2-3|2\+|engineer ii|sde ii|mid-level", full_text))
-        has_heavy_yoe = bool(re.search(r"(?:5\+|6\+|7\+|8\+|10\+)\s*(?:years|yoe)", desc_lower))
-
         if has_mid_signal:
-            seniority_score = 35.0 # Optimal sweet spot
-        elif is_senior and not has_heavy_yoe:
-            seniority_score = 30.0 # Stretch target
-        elif has_heavy_yoe:
-            seniority_score = 15.0 # High YOE barrier
+            seniority_score = 35.0 # Sweet spot for candidate
 
         # 5. Technical Stack Alignment Score (Up to 40 pts)
-        tech_score = min(40.0, len(found_matches) * 5.0)
+        tech_score = min(40.0, len(found_matches) * 6.0)
 
         # Total STAIR score (Seniority max 35 + Tech max 40 + Location max 25 = 100 max)
         total_score = min(100.0, round(seniority_score + tech_score + loc_score, 1))
