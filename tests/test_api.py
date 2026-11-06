@@ -124,3 +124,55 @@ async def test_auth_enforcement_when_password_set():
     finally:
         # Reset password to blank for other tests
         settings.APP_PASSWORD = ""
+
+@pytest.mark.asyncio
+async def test_cleanup_purges_old_jobs_and_preserves_applied():
+    from datetime import datetime, timezone, timedelta
+    from app.core.cleanup import purge_old_records
+    await init_db()
+
+    # Seed an old job (70 days ago) with status 'new' -> should be deleted
+    # Seed an old job (70 days ago) with status 'applied' -> should be preserved
+    # Seed a recent job (5 days ago) -> should be preserved
+    async with async_session_factory() as db:
+        old_job = JobPosting(
+            title="Old Python Dev",
+            company="OldCorp",
+            location="Remote",
+            url=f"https://oldcorp.com/job/{uuid.uuid4().hex}",
+            source_platform="ashby",
+            status="new",
+            discovered_at=datetime.now(timezone.utc) - timedelta(days=70)
+        )
+        applied_job = JobPosting(
+            title="Applied Role",
+            company="DreamCorp",
+            location="Remote",
+            url=f"https://dreamcorp.com/job/{uuid.uuid4().hex}",
+            source_platform="ashby",
+            status="applied",
+            discovered_at=datetime.now(timezone.utc) - timedelta(days=70)
+        )
+        recent_job = JobPosting(
+            title="Recent Role",
+            company="FreshCorp",
+            location="Remote",
+            url=f"https://freshcorp.com/job/{uuid.uuid4().hex}",
+            source_platform="ashby",
+            status="new",
+            discovered_at=datetime.now(timezone.utc) - timedelta(days=5)
+        )
+        db.add_all([old_job, applied_job, recent_job])
+        await db.commit()
+        old_id, applied_id, recent_id = old_job.id, applied_job.id, recent_job.id
+
+    # Run cleanup with 60 days retention
+    summary = await purge_old_records(retention_days=60, preserve_applied=True)
+    assert summary["status"] == "success"
+    assert summary["deleted_jobs"] >= 1
+
+    # Verify old_job was deleted, applied_job and recent_job remain
+    async with async_session_factory() as db:
+        assert (await db.get(JobPosting, old_id)) is None
+        assert (await db.get(JobPosting, applied_id)) is not None
+        assert (await db.get(JobPosting, recent_id)) is not None

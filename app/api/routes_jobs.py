@@ -89,3 +89,12 @@ async def delete_job(job_id: int, db: AsyncSession = Depends(get_db)):
     await db.delete(job)
     await db.commit()
     return {"success": True, "job_id": job_id}
+
+@router.post("/cleanup")
+async def trigger_manual_cleanup(days: Optional[int] = None, preserve_applied: bool = True):
+    """
+    Manually triggers data retention cleanup.
+    Purges jobs older than `days` (defaults to DATA_RETENTION_DAYS, e.g. 60 days).
+    """
+    from app.core.cleanup import purge_old_records
+    return await purge_old_records(retention_days=days, preserve_applied=preserve_applied)

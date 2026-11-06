@@ -31,11 +31,13 @@ class Settings(BaseSettings):
     APP_PASSWORD: str = os.getenv("APP_PASSWORD", "")
     ADMIN_SESSION_COOKIE: str = "pja_session"
     
-    # Scheduler
+    # Scheduler & Data Retention
     SCHEDULER_ENABLED: bool = True
     SCRAPE_INTERVAL_MINUTES: int = 60
     AUTO_TAILOR_HIGH_MATCH: bool = True
     MIN_MATCH_SCORE_NOTIFY: int = 70
+    DATA_RETENTION_DAYS: int = int(os.getenv("DATA_RETENTION_DAYS", "60"))
+    AUTO_CLEANUP_ENABLED: bool = os.getenv("AUTO_CLEANUP_ENABLED", "true").lower() in ("true", "1")
     
     # LLM Configuration
     # Options: "auto" (Groq <-> NVIDIA NIM auto-failover), "groq", "nvidia"
