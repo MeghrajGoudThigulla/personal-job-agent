@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", 587))
     SMTP_USER: str = os.getenv("SMTP_USER", "")
     SMTP_PASS: str = os.getenv("SMTP_PASS", "")
-    SMTP_TO: str = os.getenv("SMTP_TO", "meghraj.thigulla@outlook.com")
+    SMTP_TO: str = os.getenv("SMTP_TO", "")
 
     # Paths
     BASE_DIR: Path = BASE_DIR

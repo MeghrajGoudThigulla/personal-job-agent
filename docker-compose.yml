@@ -11,9 +11,13 @@ services:
       - "8000:8000"
     environment:
       - PORT=8000
-      - SCHEDULER_ENABLED=true
-      - SCRAPE_INTERVAL_MINUTES=60
-      - MIN_MATCH_SCORE_NOTIFY=70
+      - ENV=${ENV:-development}
+      - APP_PASSWORD=${APP_PASSWORD:-}
+      - SESSION_SECRET=${SESSION_SECRET:-}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - SCHEDULER_ENABLED=${SCHEDULER_ENABLED:-true}
+      - SCRAPE_INTERVAL_MINUTES=${SCRAPE_INTERVAL_MINUTES:-60}
+      - MIN_MATCH_SCORE_NOTIFY=${MIN_MATCH_SCORE_NOTIFY:-70}
       - LLM_PROVIDER=${LLM_PROVIDER:-groq}
       - GROQ_API_KEY=${GROQ_API_KEY:-}
       - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
@@ -22,10 +26,15 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_TO=${SMTP_TO:-}
     volumes:
       - ./data:/app/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
       interval: 30s
       timeout: 10s
       retries: 3

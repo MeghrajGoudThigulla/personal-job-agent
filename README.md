@@ -174,16 +174,60 @@ The `render.yaml` blueprint is configured for **Render's Free Tier** (`plan: fre
 1. Log in to [Render](https://render.com).
 2. Click **New +** -> **Blueprint**.
 3. Select `MeghrajGoudThigulla/personal-job-agent`.
-4. Render will read `render.yaml` and set it up as a **Free Web Service**.
+4. Render will read `render.yaml` and set it up as a **Free Web Service** with `healthCheckPath: /health/live`.
 5. Set your secret environment variables:
+   - `APP_PASSWORD` (minimum 12 characters)
+   - `SESSION_SECRET` (at least 32 random characters)
+   - `DATABASE_URL` (Supabase Postgres connection pooler URL)
    - `GROQ_API_KEY`
    - `NVIDIA_NIM_API_KEY`
    - `TELEGRAM_BOT_TOKEN`
    - `TELEGRAM_CHAT_ID`
 6. Click **Apply Blueprint**!
+
+> [!IMPORTANT]
+> **Production Database Requirement (Supabase Postgres)**:
+> In production on Render, you must configure `DATABASE_URL` with your **Supabase IPv4 Connection Pooler** (e.g. `postgresql+asyncpg://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`).
+> Do **not** use the direct `db.*.supabase.co` hostname because it resolves to IPv6-only addresses which Render cannot route. The connection pooler statement cache setting (`statement_cache_size=0`) is handled automatically by the application.
+>
+> If you choose to use SQLite on Render instead of Supabase, you must mount a **Persistent Disk** at `/app/data` (Render Dashboard -> Service -> Disks -> Add Disk -> Mount Path: `/app/data`), otherwise data and database files will be wiped on every container restart.
+
+#### Database Migrations:
+Database schema migrations run automatically on application startup via `init_db()`. You can also execute migrations manually at any time:
+```bash
+alembic upgrade head
+```
+
+#### Environment Variables Reference:
+| Variable | Description | Default / Required |
+| --- | --- | --- |
+| `ENV` | Environment mode (`production` or `development`) | `development` |
+| `APP_PASSWORD` | Access password for UI and API | Required in production (≥12 chars) |
+| `SESSION_SECRET` | Secret key for signed, tamper-proof session cookies | Required in production (≥32 bytes) |
+| `DATABASE_URL` | SQLAlchemy database URL (AsyncPG / SQLite) | `sqlite+aiosqlite:///data/jobs.db` |
+| `PORT` | HTTP server port | `8000` |
+| `SCHEDULER_ENABLED` | Enable autonomous APScheduler background jobs | `true` |
+| `SCRAPE_INTERVAL_MINUTES` | Frequency of job discovery cycles | `60` |
+| `MIN_MATCH_SCORE_NOTIFY` | Minimum STAIR match score (0-100) to trigger alerts | `70` |
+| `AUTO_TAILOR_HIGH_MATCH` | Automatically generate tailored resumes & outreach | `true` |
+| `LLM_PROVIDER` | LLM router provider (`auto`, `groq`, `nvidia`) | `auto` |
+| `GROQ_API_KEY` | Groq Cloud API Key | Optional |
+| `GROQ_MODEL` | Groq Model Name | `llama-3.3-70b-versatile` |
+| `NVIDIA_NIM_API_KEY` | NVIDIA NIM Cloud API Key | Optional |
+| `NVIDIA_NIM_MODEL` | NVIDIA NIM Model Name | `nvidia/nemotron-3-ultra-550b-a55b` |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token for push alerts | Optional |
+| `TELEGRAM_CHAT_ID` | Telegram Chat ID for push alerts | Optional |
+| `DISCORD_WEBHOOK_URL` | Discord Channel Webhook URL | Optional |
+| `SLACK_WEBHOOK_URL` | Slack Channel Webhook URL | Optional |
+| `SMTP_HOST` | Outgoing SMTP server address | Optional |
+| `SMTP_PORT` | Outgoing SMTP server port | `587` |
+| `SMTP_USER` | SMTP username | Optional |
+| `SMTP_PASS` | SMTP password | Optional |
+| `SMTP_TO` | Target recipient email address | Optional (empty default) |
+
 7. *(Optional Tip)*: Render's free tier sleeps after 15 minutes of inactivity. To keep your job hunter running continuously 24/7 for free:
    - Create a free account on [cron-job.org](https://cron-job.org) or [UptimeRobot](https://uptimerobot.com).
-   - Set up a free monitor to ping your Render URL's `/health` endpoint every 10 minutes (e.g. `https://personal-job-agent.onrender.com/health`).
+   - Set up a free monitor to ping your Render URL's `/health/live` endpoint every 10 minutes (e.g. `https://personal-job-agent.onrender.com/health/live`).
 
 ---
 
