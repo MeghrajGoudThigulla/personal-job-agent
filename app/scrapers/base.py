@@ -1,7 +1,6 @@
 import abc
 import logging
 from typing import List, Dict, Any
-import httpx
 
 logger = logging.getLogger("personal_job_agent.scraper.base")
 

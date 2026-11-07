@@ -6,7 +6,7 @@ async def test_personalized_queries_coverage():
     scraper = SearchDorksScraper()
     assert len(scraper.queries_data) == 11, "Must contain all 11 target roles"
     assert len(scraper.flat_queries) == 121, "Must contain all 121 ATS dork queries"
-    
+
     # Check Role 1
     r1 = scraper.flat_queries[0]
     assert r1["index"] == 1
@@ -29,7 +29,7 @@ async def test_round_robin_batch_progression():
     scraper = SearchDorksScraper()
     total = len(scraper.flat_queries)
     assert total == 121
-    
+
     # Batch 1 (start 0, size 8)
     batch_1, next_1 = scraper.get_batch(0, 8)
     assert len(batch_1) == 8

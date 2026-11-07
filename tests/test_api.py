@@ -4,7 +4,7 @@ import json
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.core.database import init_db, async_session_factory
-from app.core.models import JobPosting, TailoredApplication
+from app.core.models import JobPosting
 
 @pytest.mark.asyncio
 async def test_health_endpoint():

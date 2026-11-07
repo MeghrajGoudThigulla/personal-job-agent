@@ -1,14 +1,14 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, Any, Tuple
 from app.config import settings
 
 class StairMatcher:
     """
     STAIR (STructure Aware Information Retriever) Matching Engine.
     Inspired by IBM STAIR research (2609.03874v2.pdf) & candidate profile context.
-    
+
     Rather than treating resume and job descriptions as flat text chunks, STAIR
     exploits structured sections:
     - Language & Framework requirements vs candidate skills
@@ -93,7 +93,7 @@ class StairMatcher:
         for category, skill_list in skills_dict.items():
             for s in skill_list:
                 self.candidate_skills.add(s.lower())
-        
+
         # Add core synonyms & keywords
         self.candidate_skills.update([
             "python", "fastapi", "flask", "c#", ".net", ".net 8", "asp.net core",
@@ -109,7 +109,7 @@ class StairMatcher:
     def classify_role(self, title: str, description: str) -> Tuple[str, str]:
         """Classifies role title into one of the 11 target roles and priority tier."""
         text = f"{title} {description[:300]}".lower()
-        
+
         for role_name, patterns in self.ROLE_PATTERNS.items():
             for pat in patterns:
                 if re.search(pat, text, re.IGNORECASE):
@@ -119,7 +119,7 @@ class StairMatcher:
                     elif "P3" in role_name:
                         tier = "P3"
                     return role_name, tier
-                    
+
         # Fallback heuristic
         if "backend" in text or "python" in text:
             return "ROLE 1 — Backend Engineer", "P1"
@@ -129,7 +129,7 @@ class StairMatcher:
             return "ROLE 4 — Full-Stack Engineer", "P1"
         elif "flutter" in text or "mobile" in text:
             return "ROLE 8 — Flutter / Mobile Engineer", "P2"
-            
+
         return "Software Engineer", "P1"
 
     INDIAN_STATES = [
@@ -238,7 +238,6 @@ class StairMatcher:
         loc_clean = (location or "").lower().strip()
         title_lower = (title or "").lower().strip()
         desc_sample = description[:1500].lower()
-        combined = f"{title_lower} {loc_clean} {desc_sample}"
 
         # 0. Check regional tags in Title (e.g. "Support Engineer (EMEA)" or "(AMER)" or "(Europe)")
         if re.search(r"\b(emea|amer|americas|latam|europe|us|uk|apac)\b", title_lower) and not re.search(r"\b(india)\b", title_lower):
@@ -314,7 +313,7 @@ class StairMatcher:
             r"\bautomation\s+tester\b", r"\bsecurity\s+engineer\b", r"\binfosec\b",
             r"\bembedded\b", r"\bfirmware\b", r"\bhardware\b"
         ]
-        
+
         for disq in hard_disqualifiers:
             if re.search(disq, title_lower):
                 return {

@@ -199,30 +199,36 @@ class SearchDorksScraper(BaseScraper):
 
             # Verify URL belongs to an ATS platform
             ats_domains = [
-                "ashbyhq.com", "greenhouse.io", "lever.co", "myworkdayjobs.com", 
-                "smartrecruiters.com", "icims.com", "bamboohr.com", "jobvite.com", 
+                "ashbyhq.com", "greenhouse.io", "lever.co", "myworkdayjobs.com",
+                "smartrecruiters.com", "icims.com", "bamboohr.com", "jobvite.com",
                 "jazz.co", "workable.com"
             ]
             if any(ats in raw_url.lower() for ats in ats_domains):
                 company_guess = "ATS Company"
                 if "ashbyhq.com/" in raw_url:
                     parts = raw_url.split("ashbyhq.com/")[1].split("/")
-                    if parts: company_guess = parts[0].replace("-", " ").title()
+                    if parts:
+                        company_guess = parts[0].replace("-", " ").title()
                 elif "greenhouse.io/" in raw_url:
                     parts = raw_url.split("greenhouse.io/")[1].split("/")
-                    if parts: company_guess = parts[0].replace("-", " ").title()
+                    if parts:
+                        company_guess = parts[0].replace("-", " ").title()
                 elif "lever.co/" in raw_url:
                     parts = raw_url.split("lever.co/")[1].split("/")
-                    if parts: company_guess = parts[0].replace("-", " ").title()
+                    if parts:
+                        company_guess = parts[0].replace("-", " ").title()
                 elif "myworkdayjobs.com/" in raw_url:
                     match_wd = re.search(r"https?://([^.]+)\.", raw_url)
-                    if match_wd: company_guess = match_wd.group(1).replace("-", " ").title()
+                    if match_wd:
+                        company_guess = match_wd.group(1).replace("-", " ").title()
                 elif "smartrecruiters.com/" in raw_url:
                     parts = raw_url.split("smartrecruiters.com/")[1].split("/")
-                    if parts: company_guess = parts[0].replace("-", " ").title()
+                    if parts:
+                        company_guess = parts[0].replace("-", " ").title()
                 elif "workable.com/" in raw_url:
                     parts = raw_url.split("workable.com/")[1].split("/")
-                    if parts: company_guess = parts[0].replace("-", " ").title()
+                    if parts:
+                        company_guess = parts[0].replace("-", " ").title()
 
                 # Extract location from snippet or title
                 detected_location = "India / Remote"

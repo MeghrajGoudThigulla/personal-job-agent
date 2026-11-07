@@ -15,7 +15,7 @@ async def test_llm_auto_failover_groq_to_nvidia():
         with patch.object(client, "_call_nvidia_nim", new_callable=AsyncMock) as mock_nvidia:
             mock_nvidia.return_value = "Tailored via NVIDIA NIM fallback"
             res = await client.generate_completion("system prompt", "user prompt")
-            
+
             assert res == "Tailored via NVIDIA NIM fallback"
             assert mock_nvidia.called
 
@@ -31,7 +31,7 @@ async def test_llm_auto_failover_nvidia_to_groq():
         with patch.object(client, "_call_groq", new_callable=AsyncMock) as mock_groq:
             mock_groq.return_value = "Tailored via Groq fallback"
             res = await client.generate_completion("system prompt", "user prompt")
-            
+
             assert res == "Tailored via Groq fallback"
             assert mock_groq.called
 

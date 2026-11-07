@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     PORT: int = int(os.getenv("PORT", 8000))
     HOST: str = "0.0.0.0"
-    
+
     # Storage
     DATABASE_URL: str = f"sqlite+aiosqlite:///{DATA_DIR}/jobs.db"
 
@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # Security & Single-User Auth
     APP_PASSWORD: str = os.getenv("APP_PASSWORD", "")
     ADMIN_SESSION_COOKIE: str = "pja_session"
-    
+
     # Scheduler & Data Retention
     SCHEDULER_ENABLED: bool = True
     SCRAPE_INTERVAL_MINUTES: int = 60
@@ -40,31 +40,31 @@ class Settings(BaseSettings):
     MIN_MATCH_SCORE_NOTIFY: int = 70
     DATA_RETENTION_DAYS: int = int(os.getenv("DATA_RETENTION_DAYS", "60"))
     AUTO_CLEANUP_ENABLED: bool = os.getenv("AUTO_CLEANUP_ENABLED", "true").lower() in ("true", "1")
-    
+
     # LLM Configuration
     # Options: "auto" (Groq <-> NVIDIA NIM auto-failover), "groq", "nvidia"
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "auto")
-    
+
     # Groq Settings
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
-    
+
     # NVIDIA NIM Settings (e.g. nvidia/nemotron-3-ultra-550b-a55b or meta/llama-3.1-70b-instruct)
     NVIDIA_NIM_API_KEY: str = os.getenv("NVIDIA_NIM_API_KEY", "")
     NVIDIA_NIM_MODEL: str = os.getenv("NVIDIA_NIM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b")
     NVIDIA_NIM_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
-    
+
     # Notification Channels
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "")
-    
+
     # Discord Webhook
     DISCORD_WEBHOOK_URL: str = os.getenv("DISCORD_WEBHOOK_URL", "")
-    
+
     # Slack Webhook
     SLACK_WEBHOOK_URL: str = os.getenv("SLACK_WEBHOOK_URL", "")
-    
+
     # Email / SMTP
     EMAIL_NOTIFY_ENABLED: bool = False
     SMTP_HOST: str = os.getenv("SMTP_HOST", "")
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     SMTP_USER: str = os.getenv("SMTP_USER", "")
     SMTP_PASS: str = os.getenv("SMTP_PASS", "")
     SMTP_TO: str = os.getenv("SMTP_TO", "meghraj.thigulla@outlook.com")
-    
+
     # Paths
     BASE_DIR: Path = BASE_DIR
     DATA_DIR: Path = DATA_DIR

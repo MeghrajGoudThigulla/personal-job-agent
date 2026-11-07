@@ -1,4 +1,3 @@
-import pytest
 from app.intelligence.anti_slop import AntiSlopValidator
 
 def test_anti_slop_catches_buzzwords():

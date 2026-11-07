@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 from app.core.database import async_session_factory
 from app.core.models import AuditLog
 

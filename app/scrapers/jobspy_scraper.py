@@ -18,7 +18,7 @@ class JobSpyScraper(BaseScraper):
         jobs = []
         try:
             from jobspy import scrape_jobs
-            
+
             search_terms = [
                 "Python Backend Developer",
                 "FastAPI Developer",

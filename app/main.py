@@ -1,4 +1,3 @@
-import os
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -28,7 +27,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 async def lifespan(app: FastAPI):
     # Startup: Initialize Database & Load Saved Settings
     await init_db()
-    
+
     # Load persisted settings overrides from SQLite
     try:
         from app.core.database import async_session_factory
@@ -43,14 +42,14 @@ async def lifespan(app: FastAPI):
                     elif rec.key in ("SCHEDULER_ENABLED", "AUTO_TAILOR_HIGH_MATCH", "EMAIL_NOTIFY_ENABLED"):
                         val = val.lower() in ("true", "1")
                     setattr(settings, rec.key, val)
-    except Exception as e:
+    except Exception:
         pass
 
     # Start Background Job Scheduler
     start_scheduler()
-    
+
     yield
-    
+
     # Shutdown
     stop_scheduler()
 
@@ -97,7 +96,7 @@ async def auth_middleware(request: Request, call_next):
         if path.startswith("/api/"):
             from fastapi.responses import JSONResponse
             return JSONResponse(status_code=401, content={"detail": "Unauthorized: Valid APP_PASSWORD required"})
-        
+
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/login", status_code=303)
 
@@ -214,7 +213,7 @@ async def job_detail_view(request: Request, job_id: int, db: AsyncSession = Depe
         raise HTTPException(status_code=404, detail="Job not found")
 
     job_dict = job.to_dict()
-    
+
     # Parse STAIR match metadata
     match_meta = {}
     try:
@@ -225,7 +224,7 @@ async def job_detail_view(request: Request, job_id: int, db: AsyncSession = Depe
     # Load tailored application if exists
     app_res = await db.execute(select(TailoredApplication).where(TailoredApplication.job_id == job_id))
     app_record = app_res.scalar_one_or_none()
-    
+
     linkedin_messages = {}
     if app_record and app_record.linkedin_4mm:
         try:
@@ -277,7 +276,7 @@ async def trace_view(request: Request, db: AsyncSession = Depends(get_db)):
         request=request,
         name="audit_logs.html",
         context={
-            "logs": [l.to_dict() for l in logs]
+            "logs": [log.to_dict() for log in logs]
         }
     )
 

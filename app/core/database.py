@@ -3,16 +3,20 @@ import os
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.config import settings
-from app.core.models import Base, AppSetting
+from app.core.models import Base
 
 logger = logging.getLogger(__name__)
 
+def normalize_database_url(url: str) -> str:
+    """Normalize database URL for async drivers."""
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://") and not url.startswith("postgresql+psycopg://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
 # Resolve database URL ensuring async driver is used
-db_url = settings.DATABASE_URL
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
-elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+asyncpg://"):
-    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+db_url = normalize_database_url(settings.DATABASE_URL)
 
 # Configure engine parameters depending on DB backend (SQLite vs PostgreSQL)
 engine_kwargs = {
@@ -50,31 +54,22 @@ async_session_factory = async_sessionmaker(
     expire_on_commit=False
 )
 
+def run_alembic_upgrade(connection):
+    from alembic.config import Config
+    from alembic import command
+    alembic_ini_path = str(settings.BASE_DIR / "alembic.ini")
+    alembic_cfg = Config(alembic_ini_path)
+    alembic_cfg.attributes["connection"] = connection
+    command.upgrade(alembic_cfg, "head")
+
 async def init_db():
-    """Initializes tables and default settings if needed."""
+    """Initializes tables and runs Alembic migrations."""
     # Ensure data directory exists
     os.makedirs(settings.DATA_DIR, exist_ok=True)
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-
-            # Auto-migrate column sizes for PostgreSQL backends (widens existing columns)
-            if "postgresql" in engine.dialect.name.lower():
-                from sqlalchemy import text
-                migrations = [
-                    "ALTER TABLE jobs ALTER COLUMN match_tier TYPE VARCHAR(100);",
-                    "ALTER TABLE jobs ALTER COLUMN title TYPE VARCHAR(512);",
-                    "ALTER TABLE jobs ALTER COLUMN location TYPE VARCHAR(512);",
-                    "ALTER TABLE jobs ALTER COLUMN role_category TYPE VARCHAR(255);",
-                    "ALTER TABLE jobs ALTER COLUMN url TYPE VARCHAR(1024);",
-                    "ALTER TABLE jobs ALTER COLUMN remote_status TYPE VARCHAR(100);",
-                    "ALTER TABLE jobs ALTER COLUMN status TYPE VARCHAR(100);"
-                ]
-                for mig in migrations:
-                    try:
-                        await conn.execute(text(mig))
-                    except Exception as mig_err:
-                        logger.debug(f"PostgreSQL migration note for '{mig}': {mig_err}")
+            await conn.run_sync(run_alembic_upgrade)
     except OSError as e:
         if "Network is unreachable" in str(e) or getattr(e, "errno", None) == 101:
             logger.error(

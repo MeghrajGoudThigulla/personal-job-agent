@@ -1,4 +1,3 @@
-import os
 import re
 import shutil
 import subprocess
@@ -69,7 +68,7 @@ class PDFCompiler:
 
         # 2. Check for xelatex or pdflatex
         compiler = shutil.which("xelatex") or shutil.which("pdflatex")
-        
+
         if compiler:
             try:
                 cmd = [
@@ -94,7 +93,7 @@ class PDFCompiler:
 
         # 3. Generate HTML printable fallback
         self._generate_html_resume(latex_content, html_path, filename_base)
-        
+
         pdf_generated = pdf_path.exists()
         return {
             "success": True,

@@ -1,6 +1,4 @@
 import logging
-import re
-from datetime import datetime
 from typing import Dict, Any
 from app.config import settings
 from app.notifiers.telegram import TelegramNotifier
@@ -31,7 +29,7 @@ class NotificationDispatcher:
 
     async def dispatch_job_alert(self, job_data: Dict[str, Any]) -> bool:
         score = job_data.get("match_score", 0.0)
-        
+
         # Hard check: Only notify if score meets or exceeds minimum threshold
         if score < settings.MIN_MATCH_SCORE_NOTIFY:
             return False

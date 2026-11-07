@@ -21,12 +21,12 @@ class JobPosting(Base):
     description = Column(Text, default="")
     posted_date = Column(String(100), default="")
     discovered_at = Column(DateTime, default=get_utc_now, index=True)
-    
+
     # Intelligence Match Details
     match_score = Column(Float, default=0.0, index=True)
     match_tier = Column(String(100), default="P1", index=True) # P1, P2, P3, Excluded (Location), etc.
     match_reason = Column(Text, default="{}") # JSON metadata: matched_skills, missing_skills, reasoning
-    
+
     # Workflow Status
     status = Column(String(100), default="new", index=True) # new, reviewed, tailored, applied, rejected, archived
     notified = Column(Boolean, default=False, index=True)

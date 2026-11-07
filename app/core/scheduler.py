@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
 from app.scrapers.engine import ScraperEngine

@@ -1,7 +1,7 @@
 import re
 import json
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict
 from app.config import settings
 
 class AntiSlopValidator:
@@ -10,14 +10,14 @@ class AntiSlopValidator:
     Eliminates AI buzzwords, vague corporate fluff, and generic boilerplate.
     Ensures concrete, falsifiable technical metrics and authentic engineering voice.
     """
-    
+
     DEFAULT_PROHIBITED = [
-        "seamless", "seamlessly", "robust", "powerful", "cutting-edge", 
-        "game-changing", "unlock", "unlocking", "leverage", "leveraging", 
-        "delve", "delving", "tapestry", "revolutionize", "revolutionizing", 
-        "next-generation", "next-gen", "innovative", "fast-paced world", 
-        "dynamic environment", "results-oriented", "results-driven", 
-        "passionate professional", "synergy", "synergies", "spearheaded", 
+        "seamless", "seamlessly", "robust", "powerful", "cutting-edge",
+        "game-changing", "unlock", "unlocking", "leverage", "leveraging",
+        "delve", "delving", "tapestry", "revolutionize", "revolutionizing",
+        "next-generation", "next-gen", "innovative", "fast-paced world",
+        "dynamic environment", "results-oriented", "results-driven",
+        "passionate professional", "synergy", "synergies", "spearheaded",
         "paradigm shift", "thought leader", "rockstar", "ninja", "guru",
         "holistic", "empower", "empowering", "testament", "beacon", "catalyst"
     ]
@@ -74,7 +74,7 @@ class AntiSlopValidator:
 
         word_count = max(1, len(text.split()))
         slop_density = (len(detected) / word_count) * 100
-        
+
         # Calculate score (base penalization per buzzword)
         slop_score = min(100.0, len(detected) * 12.0 + slop_density * 8.0)
 

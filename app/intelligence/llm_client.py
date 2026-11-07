@@ -1,6 +1,6 @@
 import logging
 import httpx
-from typing import Dict, Any, Optional
+from typing import Optional
 from app.config import settings
 from app.core.trace import log_audit_event
 
@@ -74,7 +74,7 @@ class UnifiedLLMClient:
             "Authorization": f"Bearer {settings.GROQ_API_KEY}",
             "Content-Type": "application/json"
         }
-        
+
         models_to_try = [
             settings.GROQ_MODEL,
             "openai/gpt-oss-120b",
