@@ -32,6 +32,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy project files
 COPY app/ ./app/
 COPY data/ ./data/
+COPY migrations/ ./migrations/
+COPY alembic.ini .
 
 # Ensure output directory for compiled resumes exists
 RUN mkdir -p /app/data/tailored_resumes
