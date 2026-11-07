@@ -13,6 +13,7 @@ class JobPosting(Base):
     location = Column(String(512), default="Unknown")
     remote_status = Column(String(100), default="Unknown") # Remote, Hybrid, Onsite
     role_category = Column(String(255), default="Software Engineering")
+    fingerprint = Column(String(64), index=True, nullable=True)
     url = Column(String(1024), unique=True, nullable=False, index=True)
     source_platform = Column(String(100), nullable=False, index=True)
     description = Column(Text, default="")
@@ -45,6 +46,7 @@ class JobPosting(Base):
             "location": self.location,
             "remote_status": self.remote_status,
             "role_category": self.role_category,
+            "fingerprint": self.fingerprint,
             "url": self.url,
             "source_platform": self.source_platform,
             "description": self.description,

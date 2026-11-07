@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from app.config import settings
 from app.core.clock import utcnow
 from app.core.database import async_session_factory
+from app.core.fingerprint import compute_fingerprint
 from app.core.models import JobPosting, TailoredApplication
 from app.core.trace import log_audit_event
 from app.intelligence.stair_matcher import StairMatcher
@@ -71,30 +72,39 @@ class ScraperEngine:
         notified_count = 0
         high_match_items = []
 
+        batch_urls = set()
+        batch_fingerprints = set()
+
         # Phase 1: Ingest, deduplicate, evaluate STAIR score, and commit immediately
         async with async_session_factory() as session:
             for item in raw_jobs:
                 url = item.get("url")
-                if not url:
+                if not url or url in batch_urls:
                     continue
 
-                # 1. URL-level deduplication
+                fp = compute_fingerprint(
+                    company=item.get("company", ""),
+                    title=item.get("title", ""),
+                    location=item.get("location", "")
+                )
+                if fp in batch_fingerprints:
+                    continue
+
+                # 1. URL-level deduplication (exact equality)
                 existing = await session.execute(select(JobPosting.id).where(JobPosting.url == url))
                 if existing.scalar_one_or_none() is not None:
-                    continue # Already processed
+                    batch_urls.add(url)
+                    batch_fingerprints.add(fp)
+                    continue
 
-                # 2. Cross-source fingerprint deduplication (same company + exact role title)
-                title_clean = (item.get("title") or "").strip()
-                company_clean = (item.get("company") or "").strip()
-                if title_clean and company_clean and company_clean.lower() != "unknown company":
-                    existing_fp = await session.execute(
-                        select(JobPosting.id).where(
-                            JobPosting.company.ilike(company_clean),
-                            JobPosting.title.ilike(title_clean)
-                        )
-                    )
-                    if existing_fp.scalar_one_or_none() is not None:
-                        continue # Already recorded from another source platform
+                # 2. Deterministic fingerprint deduplication (exact equality, no ilike)
+                existing_fp = await session.execute(
+                    select(JobPosting.id).where(JobPosting.fingerprint == fp)
+                )
+                if existing_fp.scalar_one_or_none() is not None:
+                    batch_urls.add(url)
+                    batch_fingerprints.add(fp)
+                    continue
 
                 # Freshness Gate: Parse posted_date and verify age <= MAX_JOB_AGE_DAYS
                 raw_posted_date = item.get("posted_date")
@@ -132,6 +142,7 @@ class ScraperEngine:
                     location=item.get("location", "Remote")[:500],
                     remote_status=item.get("remote_status", "Remote")[:100],
                     role_category=role_cat[:250],
+                    fingerprint=fp,
                     url=url[:1000],
                     source_platform=item.get("source_platform", "Web")[:100],
                     description=item.get("description", ""),
@@ -146,6 +157,8 @@ class ScraperEngine:
                     notified=False
                 )
                 session.add(job)
+                batch_urls.add(url)
+                batch_fingerprints.add(fp)
                 await session.flush() # Populate job.id
                 new_jobs_count += 1
 
