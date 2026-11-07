@@ -57,6 +57,24 @@ async def init_db():
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+            # Auto-migrate column sizes for PostgreSQL backends (widens existing columns)
+            if "postgresql" in engine.dialect.name.lower():
+                from sqlalchemy import text
+                migrations = [
+                    "ALTER TABLE jobs ALTER COLUMN match_tier TYPE VARCHAR(100);",
+                    "ALTER TABLE jobs ALTER COLUMN title TYPE VARCHAR(512);",
+                    "ALTER TABLE jobs ALTER COLUMN location TYPE VARCHAR(512);",
+                    "ALTER TABLE jobs ALTER COLUMN role_category TYPE VARCHAR(255);",
+                    "ALTER TABLE jobs ALTER COLUMN url TYPE VARCHAR(1024);",
+                    "ALTER TABLE jobs ALTER COLUMN remote_status TYPE VARCHAR(100);",
+                    "ALTER TABLE jobs ALTER COLUMN status TYPE VARCHAR(100);"
+                ]
+                for mig in migrations:
+                    try:
+                        await conn.execute(text(mig))
+                    except Exception as mig_err:
+                        logger.debug(f"PostgreSQL migration note for '{mig}': {mig_err}")
     except OSError as e:
         if "Network is unreachable" in str(e) or getattr(e, "errno", None) == 101:
             logger.error(

@@ -108,18 +108,18 @@ class ScraperEngine:
                 role_cat = eval_res["role_category"]
 
                 job = JobPosting(
-                    title=item.get("title", "")[:250],
+                    title=item.get("title", "")[:500],
                     company=item.get("company", "")[:250],
-                    location=item.get("location", "Remote")[:250],
-                    remote_status=item.get("remote_status", "Remote")[:50],
-                    role_category=role_cat[:100],
-                    url=url[:510],
+                    location=item.get("location", "Remote")[:500],
+                    remote_status=item.get("remote_status", "Remote")[:100],
+                    role_category=role_cat[:250],
+                    url=url[:1000],
                     source_platform=item.get("source_platform", "Web")[:100],
                     description=item.get("description", ""),
-                    posted_date=item.get("posted_date", ""),
+                    posted_date=item.get("posted_date", "")[:100],
                     discovered_at=datetime.utcnow(),
                     match_score=score,
-                    match_tier=tier,
+                    match_tier=tier[:100],
                     match_reason=json.dumps(eval_res),
                     status="new",
                     notified=False

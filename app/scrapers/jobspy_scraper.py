@@ -32,7 +32,7 @@ class JobSpyScraper(BaseScraper):
                 try:
                     df = await asyncio.to_thread(
                         scrape_jobs,
-                        site_name=["indeed", "glassdoor"],
+                        site_name=["indeed"], # Indeed works cleanly from datacenter IPs without proxy
                         search_term=term,
                         location="India",
                         results_wanted=15,

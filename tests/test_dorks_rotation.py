@@ -61,3 +61,4 @@ async def test_dorks_rotation_status_endpoint():
     assert "current_cursor" in status
     assert "active_batch_queries" in status
     assert len(status["active_batch_queries"]) == 8
+

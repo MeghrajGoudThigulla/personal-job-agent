@@ -20,7 +20,7 @@ async def log_audit_event(action: str, details: Any, status: str = "success") ->
             try:
                 async with async_session_factory() as session:
                     audit = AuditLog(
-                        timestamp=datetime.now(timezone.utc),
+                        timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
                         action=action,
                         details=details_str,
                         status=status

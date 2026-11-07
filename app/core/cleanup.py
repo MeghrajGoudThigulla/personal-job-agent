@@ -17,7 +17,7 @@ async def purge_old_records(retention_days: Optional[int] = None, preserve_appli
     If preserve_applied is True, jobs marked as 'applied', 'interview', or 'offer' are kept.
     """
     days = retention_days if retention_days is not None else settings.DATA_RETENTION_DAYS
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
     logger.info(f"Starting data cleanup for records older than {days} days (cutoff: {cutoff.isoformat()})...")
 
     deleted_jobs = 0

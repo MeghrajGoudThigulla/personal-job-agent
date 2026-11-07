@@ -5,18 +5,18 @@ from sqlalchemy.orm import declarative_base, relationship
 Base = declarative_base()
 
 def get_utc_now():
-    return datetime.datetime.now(datetime.timezone.utc)
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
 class JobPosting(Base):
     __tablename__ = "jobs"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False, index=True)
+    title = Column(String(512), nullable=False, index=True)
     company = Column(String(255), nullable=False, index=True)
-    location = Column(String(255), default="Unknown")
-    remote_status = Column(String(50), default="Unknown") # Remote, Hybrid, Onsite
-    role_category = Column(String(100), default="Software Engineering")
-    url = Column(String(512), unique=True, nullable=False, index=True)
+    location = Column(String(512), default="Unknown")
+    remote_status = Column(String(100), default="Unknown") # Remote, Hybrid, Onsite
+    role_category = Column(String(255), default="Software Engineering")
+    url = Column(String(1024), unique=True, nullable=False, index=True)
     source_platform = Column(String(100), nullable=False, index=True)
     description = Column(Text, default="")
     posted_date = Column(String(100), default="")
@@ -24,11 +24,11 @@ class JobPosting(Base):
     
     # Intelligence Match Details
     match_score = Column(Float, default=0.0, index=True)
-    match_tier = Column(String(10), default="P1") # P1, P2, P3
+    match_tier = Column(String(100), default="P1", index=True) # P1, P2, P3, Excluded (Location), etc.
     match_reason = Column(Text, default="{}") # JSON metadata: matched_skills, missing_skills, reasoning
     
     # Workflow Status
-    status = Column(String(50), default="new", index=True) # new, reviewed, tailored, applied, rejected, archived
+    status = Column(String(100), default="new", index=True) # new, reviewed, tailored, applied, rejected, archived
     notified = Column(Boolean, default=False, index=True)
     notified_at = Column(DateTime, nullable=True)
 
