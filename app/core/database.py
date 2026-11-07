@@ -3,7 +3,6 @@ import os
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.config import settings
-from app.core.models import Base
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +67,6 @@ async def init_db():
     os.makedirs(settings.DATA_DIR, exist_ok=True)
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
             await conn.run_sync(run_alembic_upgrade)
     except OSError as e:
         if "Network is unreachable" in str(e) or getattr(e, "errno", None) == 101:
