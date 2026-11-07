@@ -1,11 +1,10 @@
 import asyncio
 import json
 import logging
-from datetime import datetime
-from typing import Dict, Any
-
+from typing import Any, Dict
 from sqlalchemy import select
 from app.config import settings
+from app.core.clock import utcnow
 from app.core.database import async_session_factory
 from app.core.models import JobPosting, TailoredApplication
 from app.core.trace import log_audit_event
@@ -45,7 +44,7 @@ class ScraperEngine:
 
     async def run_discovery_cycle(self, scraper_filter: str = "all") -> Dict[str, Any]:
         """Runs discovery, matching, notification, and auto-tailoring."""
-        start_time = datetime.utcnow()
+        start_time = utcnow()
         logger.info(f"Starting job discovery cycle (filter: {scraper_filter})...")
 
         raw_jobs = []
@@ -117,7 +116,7 @@ class ScraperEngine:
                     source_platform=item.get("source_platform", "Web")[:100],
                     description=item.get("description", ""),
                     posted_date=item.get("posted_date", "")[:100],
-                    discovered_at=datetime.utcnow(),
+                    discovered_at=utcnow(),
                     match_score=score,
                     match_tier=tier[:100],
                     match_reason=json.dumps(eval_res),
@@ -186,7 +185,7 @@ class ScraperEngine:
                         j = await session.get(JobPosting, hm["job_id"])
                         if j:
                             j.notified = True
-                            j.notified_at = datetime.utcnow()
+                            j.notified_at = utcnow()
                             await session.commit()
                             notified_count += 1
                 except Exception as ne:
@@ -238,7 +237,7 @@ class ScraperEngine:
             # Respectful pacing between external LLM calls
             await asyncio.sleep(2.0)
 
-        duration = (datetime.utcnow() - start_time).total_seconds()
+        duration = (utcnow() - start_time).total_seconds()
         summary = {
             "total_scraped": total_scraped,
             "new_jobs": new_jobs_count,

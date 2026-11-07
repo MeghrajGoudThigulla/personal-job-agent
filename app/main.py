@@ -23,6 +23,10 @@ from app.api.routes_trace import router as trace_router
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+from app.core.clock import format_ist, to_ist
+templates.env.filters["to_ist"] = to_ist
+templates.env.filters["format_ist"] = format_ist
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize Database & Load Saved Settings

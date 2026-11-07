@@ -1,11 +1,12 @@
-import os
+from datetime import timedelta
+from typing import Any, Dict, Optional
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, Optional
-from sqlalchemy import select, delete
+import os
+from sqlalchemy import delete, select
 from app.config import settings
+from app.core.clock import utcnow
 from app.core.database import async_session_factory
-from app.core.models import JobPosting, TailoredApplication, AuditLog
+from app.core.models import AuditLog, JobPosting, TailoredApplication
 from app.core.trace import log_audit_event
 
 logger = logging.getLogger("personal_job_agent.cleanup")
@@ -17,7 +18,7 @@ async def purge_old_records(retention_days: Optional[int] = None, preserve_appli
     If preserve_applied is True, jobs marked as 'applied', 'interview', or 'offer' are kept.
     """
     days = retention_days if retention_days is not None else settings.DATA_RETENTION_DAYS
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
+    cutoff = utcnow() - timedelta(days=days)
     logger.info(f"Starting data cleanup for records older than {days} days (cutoff: {cutoff.isoformat()})...")
 
     deleted_jobs = 0

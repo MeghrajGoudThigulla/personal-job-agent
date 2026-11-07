@@ -1,11 +1,8 @@
-import datetime
-from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import declarative_base, relationship
+from app.core.clock import UTCDateTime, format_ist, utcnow
 
 Base = declarative_base()
-
-def get_utc_now():
-    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
 class JobPosting(Base):
     __tablename__ = "jobs"
@@ -20,7 +17,7 @@ class JobPosting(Base):
     source_platform = Column(String(100), nullable=False, index=True)
     description = Column(Text, default="")
     posted_date = Column(String(100), default="")
-    discovered_at = Column(DateTime, default=get_utc_now, index=True)
+    discovered_at = Column(UTCDateTime, default=utcnow, index=True)
 
     # Intelligence Match Details
     match_score = Column(Float, default=0.0, index=True)
@@ -30,7 +27,7 @@ class JobPosting(Base):
     # Workflow Status
     status = Column(String(100), default="new", index=True) # new, reviewed, tailored, applied, rejected, archived
     notified = Column(Boolean, default=False, index=True)
-    notified_at = Column(DateTime, nullable=True)
+    notified_at = Column(UTCDateTime, nullable=True)
 
     # Relationships
     application = relationship("TailoredApplication", back_populates="job", uselist=False, cascade="all, delete-orphan", lazy="selectin")
@@ -51,12 +48,14 @@ class JobPosting(Base):
             "description": self.description,
             "posted_date": self.posted_date,
             "discovered_at": self.discovered_at.isoformat() if self.discovered_at else None,
+            "discovered_at_ist": format_ist(self.discovered_at) if self.discovered_at else None,
             "match_score": self.match_score,
             "match_tier": self.match_tier,
             "match_reason": self.match_reason,
             "status": self.status,
             "notified": self.notified,
             "notified_at": self.notified_at.isoformat() if self.notified_at else None,
+            "notified_at_ist": format_ist(self.notified_at) if self.notified_at else None,
             "has_tailored_application": has_app
         }
 
@@ -72,7 +71,7 @@ class TailoredApplication(Base):
     cold_email_hiring_manager = Column(Text, default="")
     linkedin_4mm = Column(Text, default="")
     slop_score = Column(Float, default=0.0)
-    created_at = Column(DateTime, default=get_utc_now)
+    created_at = Column(UTCDateTime, default=utcnow)
 
     job = relationship("JobPosting", back_populates="application")
 
@@ -87,14 +86,15 @@ class TailoredApplication(Base):
             "cold_email_hiring_manager": self.cold_email_hiring_manager,
             "linkedin_4mm": self.linkedin_4mm,
             "slop_score": self.slop_score,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at_ist": format_ist(self.created_at) if self.created_at else None
         }
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=get_utc_now, index=True)
+    timestamp = Column(UTCDateTime, default=utcnow, index=True)
     action = Column(String(100), nullable=False)
     details = Column(Text, default="")
     status = Column(String(50), default="success")
@@ -102,7 +102,7 @@ class AuditLog(Base):
     def to_dict(self):
         return {
             "id": self.id,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "timestamp": format_ist(self.timestamp) if self.timestamp else None,
             "action": self.action,
             "details": self.details,
             "status": self.status
@@ -113,4 +113,4 @@ class AppSetting(Base):
 
     key = Column(String(100), primary_key=True)
     value = Column(Text, nullable=False)
-    updated_at = Column(DateTime, default=get_utc_now, onupdate=get_utc_now)
+    updated_at = Column(UTCDateTime, default=utcnow, onupdate=utcnow)

@@ -1,8 +1,8 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
 from typing import Any
+from app.core.clock import utcnow
 from app.core.database import async_session_factory
 from app.core.models import AuditLog
 
@@ -20,7 +20,7 @@ async def log_audit_event(action: str, details: Any, status: str = "success") ->
             try:
                 async with async_session_factory() as session:
                     audit = AuditLog(
-                        timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
+                        timestamp=utcnow(),
                         action=action,
                         details=details_str,
                         status=status
