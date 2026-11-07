@@ -54,3 +54,4 @@ class UTCDateTime(TypeDecorator):
             else:
                 value = value.astimezone(UTC)
         return value
+

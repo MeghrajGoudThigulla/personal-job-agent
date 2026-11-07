@@ -114,3 +114,20 @@ class AppSetting(Base):
     key = Column(String(100), primary_key=True)
     value = Column(Text, nullable=False)
     updated_at = Column(UTCDateTime, default=utcnow, onupdate=utcnow)
+
+class SessionRecord(Base):
+    __tablename__ = "sessions"
+
+    sid = Column(String(64), primary_key=True)
+    csrf_token = Column(String(64), nullable=False)
+    created_at = Column(UTCDateTime, default=utcnow, nullable=False)
+    expires_at = Column(UTCDateTime, nullable=False, index=True)
+    client_ip = Column(String(50), default="")
+
+class LoginAttempt(Base):
+    __tablename__ = "login_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String(50), nullable=False, index=True)
+    attempted_at = Column(UTCDateTime, default=utcnow, index=True)
+    success = Column(Boolean, default=False)

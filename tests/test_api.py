@@ -135,8 +135,15 @@ async def test_auth_enforcement_when_password_set():
             res_auth_api = await ac.get("/api/scraper/queries", headers={"Authorization": f"Bearer {settings.APP_PASSWORD}"})
             assert res_auth_api.status_code == 200
 
-            # 5. Authenticated Web UI call with Session Cookie succeeds (200)
-            res_auth_ui = await ac.get("/", cookies={settings.ADMIN_SESSION_COOKIE: settings.APP_PASSWORD})
+            # 5. Raw password as cookie is rejected (returns redirect)
+            res_raw = await ac.get("/", cookies={settings.ADMIN_SESSION_COOKIE: settings.APP_PASSWORD}, follow_redirects=False)
+            assert res_raw.status_code == 303
+
+            # 6. Valid signed session cookie succeeds (200)
+            from app.core.security import create_session
+            async with async_session_factory() as db:
+                _, valid_cookie = await create_session(db, client_ip="127.0.0.1")
+            res_auth_ui = await ac.get("/", cookies={settings.ADMIN_SESSION_COOKIE: valid_cookie})
             assert res_auth_ui.status_code == 200
     finally:
         # Reset password to blank for other tests

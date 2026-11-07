@@ -1,29 +1,41 @@
+import asyncio
 import json
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
 
-from app.config import settings
-from app.core.database import init_db, get_db
-from app.core.models import JobPosting, TailoredApplication, AuditLog, AppSetting
-from app.core.scheduler import start_scheduler, stop_scheduler, get_scheduler_status
 from app.api.routes_jobs import router as jobs_router
-from app.api.routes_tailor import router as tailor_router
 from app.api.routes_scraper import router as scraper_router
 from app.api.routes_settings import router as settings_router
+from app.api.routes_tailor import router as tailor_router
 from app.api.routes_trace import router as trace_router
+from app.config import settings
+from app.core.clock import format_ist, to_ist, utcnow
+from app.core.database import async_session_factory, get_db, init_db
+from app.core.models import AppSetting, AuditLog, JobPosting, TailoredApplication
+from app.core.scheduler import get_scheduler_status, start_scheduler, stop_scheduler
+from app.core.security import (
+    check_brute_force,
+    constant_time_compare,
+    create_session,
+    invalidate_session,
+    record_login_attempt,
+    verify_session_cookie,
+)
+
+logger = logging.getLogger("personal_job_agent.main")
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-from app.core.clock import format_ist, to_ist
 templates.env.filters["to_ist"] = to_ist
 templates.env.filters["format_ist"] = format_ist
 
@@ -82,46 +94,63 @@ if static_dir.exists():
 
 PUBLIC_PATHS = {"/health", "/health/live", "/health/ready", "/login"}
 
+
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
     path = request.url.path
-    # Public endpoints that never require auth
     if path in PUBLIC_PATHS or path.startswith("/static/"):
         return await call_next(request)
 
-    # Check Authorization header, X-API-Key, or secure Session Cookie
+    # 1. Bearer Token or X-API-Key Authentication (CSRF exempt)
     auth_header = request.headers.get("Authorization", "")
     token = auth_header.split(" ", 1)[1].strip() if auth_header.startswith("Bearer ") else ""
     api_key = request.headers.get("X-API-Key", "")
-    session_cookie = request.cookies.get(settings.ADMIN_SESSION_COOKIE, "")
 
-    is_authenticated = False
-    if settings.APP_PASSWORD:
-        import hmac
-        if token and hmac.compare_digest(token.encode("utf-8"), settings.APP_PASSWORD.encode("utf-8")):
-            is_authenticated = True
-        elif api_key and hmac.compare_digest(api_key.encode("utf-8"), settings.APP_PASSWORD.encode("utf-8")):
-            is_authenticated = True
-        elif session_cookie and session_cookie == settings.APP_PASSWORD:
-            is_authenticated = True
-
-    if is_authenticated:
+    if (token and constant_time_compare(token, settings.APP_PASSWORD)) or (
+        api_key and constant_time_compare(api_key, settings.APP_PASSWORD)
+    ):
+        request.state.auth_type = "api"
         return await call_next(request)
 
-    if path.startswith("/api/"):
-        from fastapi.responses import JSONResponse
-        return JSONResponse(status_code=401, content={"detail": "Unauthorized: Valid APP_PASSWORD required"})
+    # 2. Signed Session Cookie Authentication
+    session_cookie = request.cookies.get(settings.ADMIN_SESSION_COOKIE, "")
+    if session_cookie:
+        cookie_data = verify_session_cookie(session_cookie)
+        if cookie_data and "sid" in cookie_data:
+            from app.core.security import get_valid_session
 
-    from fastapi.responses import RedirectResponse
+            async with async_session_factory() as db:
+                session_rec = await get_valid_session(db, cookie_data["sid"])
+                if session_rec:
+                    request.state.auth_type = "cookie"
+                    request.state.session = session_rec
+                    request.state.csrf_token = session_rec.csrf_token
+
+                    # CSRF Verification for Cookie-authenticated mutating requests (logout is exempt)
+                    if request.method not in ("GET", "HEAD", "OPTIONS") and path != "/logout":
+                        csrf_header = request.headers.get("X-CSRF-Token", "")
+                        if not csrf_header or not constant_time_compare(csrf_header, session_rec.csrf_token):
+                            return JSONResponse(
+                                status_code=403,
+                                content={"detail": "CSRF token missing or invalid"},
+                            )
+
+                    return await call_next(request)
+
+    if path.startswith("/api/"):
+        return JSONResponse(status_code=401, content={"detail": "Unauthorized: Valid authentication required"})
+
     return RedirectResponse(url="/login", status_code=303)
+
 
 # -------------------------------------------------------------
 # Web UI Routes
 # -------------------------------------------------------------
 
-@app.get("/login", response_class=HTMLResponse)
-async def login_view(request: Request):
-    return HTMLResponse("""<!DOCTYPE html>
+
+def _render_login_html(error: str = "") -> str:
+    err_html = f'<p class="text-xs text-rose-400 font-semibold text-center">{error}</p>' if error else ""
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -135,6 +164,7 @@ async def login_view(request: Request):
             <h1 class="text-2xl font-black text-indigo-400">PROJECT VERONICA</h1>
             <p class="text-xs text-gray-400 mt-1">Meghraj's Autonomous Job Search Agent</p>
         </div>
+        {err_html}
         <form method="POST" action="/login" class="space-y-4">
             <div>
                 <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">Access Password</label>
@@ -147,24 +177,95 @@ async def login_view(request: Request):
         </form>
     </div>
 </body>
-</html>""")
+</html>"""
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_view(request: Request):
+    session_cookie = request.cookies.get(settings.ADMIN_SESSION_COOKIE, "")
+    if session_cookie:
+        cookie_data = verify_session_cookie(session_cookie)
+        if cookie_data and "sid" in cookie_data:
+            from app.core.security import get_valid_session
+
+            async with async_session_factory() as db:
+                if await get_valid_session(db, cookie_data["sid"]):
+                    return RedirectResponse(url="/", status_code=303)
+
+    return HTMLResponse(_render_login_html())
+
 
 @app.post("/login")
 async def login_submit(request: Request):
-    from fastapi.responses import RedirectResponse
-    form = await request.form()
-    password = form.get("password", "")
-    if password == settings.APP_PASSWORD:
-        resp = RedirectResponse(url="/", status_code=303)
-        resp.set_cookie(key=settings.ADMIN_SESSION_COOKIE, value=password, httponly=True, max_age=86400 * 30, samesite="lax")
-        return resp
-    raise HTTPException(status_code=401, detail="Invalid password")
+    forwarded = request.headers.get("x-forwarded-for")
+    client_ip = (
+        forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "127.0.0.1")
+    )
 
-@app.get("/logout")
-async def logout_view():
-    from fastapi.responses import RedirectResponse
+    async with async_session_factory() as db:
+        is_blocked, retry_after = await check_brute_force(db, client_ip)
+        if is_blocked:
+            return JSONResponse(
+                status_code=429,
+                headers={"Retry-After": str(retry_after)},
+                content={"detail": "Too many failed login attempts. Try again later."},
+            )
+
+        password = ""
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            try:
+                body = await request.json()
+                password = body.get("password", "")
+            except Exception:
+                pass
+        else:
+            form = await request.form()
+            password = form.get("password", "")
+
+        if constant_time_compare(password, settings.APP_PASSWORD):
+            await record_login_attempt(db, client_ip, success=True)
+            _, signed_cookie = await create_session(db, client_ip)
+
+            secure_flag = settings.ENV != "development"
+            resp = (
+                RedirectResponse(url="/", status_code=303)
+                if "application/json" not in content_type
+                else JSONResponse({"status": "ok"})
+            )
+            resp.set_cookie(
+                key=settings.ADMIN_SESSION_COOKIE,
+                value=signed_cookie,
+                httponly=True,
+                secure=secure_flag,
+                samesite="strict",
+                path="/",
+                max_age=7 * 86400,
+            )
+            return resp
+
+        # On failure: constant 300 ms delay, record failure, log only IP and timestamp
+        await asyncio.sleep(0.3)
+        await record_login_attempt(db, client_ip, success=False)
+        logger.warning(f"Failed login attempt from IP {client_ip} at {utcnow().isoformat()}")
+
+        if "application/json" in content_type:
+            return JSONResponse(status_code=401, content={"detail": "Invalid credentials"})
+        return HTMLResponse(_render_login_html(error="Invalid credentials"), status_code=401)
+
+
+@app.api_route("/logout", methods=["GET", "POST"])
+async def logout(request: Request):
+    session_cookie = request.cookies.get(settings.ADMIN_SESSION_COOKIE, "")
+    if session_cookie:
+        cookie_data = verify_session_cookie(session_cookie)
+        if cookie_data and "sid" in cookie_data:
+            async with async_session_factory() as db:
+                await invalidate_session(db, cookie_data["sid"])
+
     resp = RedirectResponse(url="/login", status_code=303)
-    resp.delete_cookie(settings.ADMIN_SESSION_COOKIE)
+    resp.delete_cookie(settings.ADMIN_SESSION_COOKIE, path="/")
+    return resp
     return resp
 
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
@@ -214,7 +315,8 @@ async def dashboard_view(
         name="index.html",
         context={
             "stats": stats,
-            "jobs": [j.to_dict() for j in jobs]
+            "jobs": [j.to_dict() for j in jobs],
+            "csrf_token": getattr(request.state, "csrf_token", ""),
         }
     )
 
@@ -253,7 +355,8 @@ async def job_detail_view(request: Request, job_id: int, db: AsyncSession = Depe
         context={
             "job": job_dict,
             "match_meta": match_meta,
-            "linkedin_messages": linkedin_messages
+            "linkedin_messages": linkedin_messages,
+            "csrf_token": getattr(request.state, "csrf_token", ""),
         }
     )
 
@@ -277,7 +380,8 @@ async def settings_view(request: Request):
         name="settings.html",
         context={
             "settings": settings,
-            "current_settings": current_settings
+            "current_settings": current_settings,
+            "csrf_token": getattr(request.state, "csrf_token", ""),
         }
     )
 
@@ -289,7 +393,8 @@ async def trace_view(request: Request, db: AsyncSession = Depends(get_db)):
         request=request,
         name="audit_logs.html",
         context={
-            "logs": [log.to_dict() for log in logs]
+            "logs": [log.to_dict() for log in logs],
+            "csrf_token": getattr(request.state, "csrf_token", ""),
         }
     )
 

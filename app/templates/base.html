@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Personal Job Agent | Meghraj Goud Thigulla{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -71,6 +72,9 @@
                 <button onclick="triggerScraper('all')" id="btn-scrape-all" class="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 transition-all active:scale-95">
                     <i class="fa-solid fa-arrows-rotate mr-1.5" id="scrape-icon"></i> Run Scrapers
                 </button>
+                <a href="/logout" class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
+                </a>
             </div>
         </div>
     </header>
@@ -100,7 +104,11 @@
             if (btn) btn.disabled = true;
 
             try {
-                const res = await fetch(`/api/scraper/trigger?filter_type=${filterType}`, { method: 'POST' });
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res = await fetch(`/api/scraper/trigger?filter_type=${filterType}`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
                 const data = await res.json();
                 alert(`🚀 ${data.message}`);
             } catch (err) {

@@ -115,7 +115,7 @@ class ScraperEngine:
                     url=url[:1000],
                     source_platform=item.get("source_platform", "Web")[:100],
                     description=item.get("description", ""),
-                    posted_date=item.get("posted_date", "")[:100],
+                    posted_date=str(item.get("posted_date", "") or "")[:100],
                     discovered_at=utcnow(),
                     match_score=score,
                     match_tier=tier[:100],

@@ -14,7 +14,11 @@ def test_app_refuses_to_start_in_production_with_invalid_password():
         Settings(ENV="production", APP_PASSWORD="shortpass")
 
     # Valid password in production
-    s = Settings(ENV="production", APP_PASSWORD="a_very_secure_long_password_123")
+    s = Settings(
+        ENV="production",
+        APP_PASSWORD="a_very_secure_long_password_123",
+        SESSION_SECRET="a" * 32,
+    )
     assert s.APP_PASSWORD == "a_very_secure_long_password_123"
 
     # In development, empty password is permitted
@@ -70,3 +74,4 @@ async def test_authenticated_detailed_health():
         assert data["status"] == "ok"
         assert "scheduler_running" in data
         assert "scrape_interval_minutes" in data
+

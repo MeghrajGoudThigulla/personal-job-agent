@@ -31,6 +31,7 @@ class Settings(BaseSettings):
 
     # Security & Single-User Auth
     APP_PASSWORD: str = os.getenv("APP_PASSWORD", "")
+    SESSION_SECRET: str = os.getenv("SESSION_SECRET", "")
     ADMIN_SESSION_COOKIE: str = "pja_session"
 
     @model_validator(mode="after")
@@ -41,6 +42,13 @@ class Settings(BaseSettings):
                     "APP_PASSWORD is empty or shorter than 12 characters. In production mode (ENV='production'), "
                     "a secure APP_PASSWORD of at least 12 characters is strictly required."
                 )
+            if not self.SESSION_SECRET or len(self.SESSION_SECRET.encode("utf-8")) < 32:
+                raise RuntimeError(
+                    "SESSION_SECRET is empty or shorter than 32 bytes. In production mode (ENV='production'), "
+                    "a cryptographically secure SESSION_SECRET of at least 32 bytes is strictly required."
+                )
+        elif not self.SESSION_SECRET:
+            self.SESSION_SECRET = "dev_default_session_secret_at_least_32_bytes_long_12345!"
         return self
 
     # Scheduler & Data Retention

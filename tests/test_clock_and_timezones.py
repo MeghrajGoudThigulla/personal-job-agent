@@ -112,3 +112,4 @@ async def test_aware_datetime_comparison_postgres():
         assert any(r.company == "Postgres Corp" for r in results)
 
     await engine.dispose()
+
