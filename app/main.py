@@ -80,31 +80,40 @@ if static_dir.exists():
 # Security & Single-User Authentication Middleware
 # -------------------------------------------------------------
 
+PUBLIC_PATHS = {"/health", "/health/live", "/health/ready", "/login"}
+
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
+    path = request.url.path
+    # Public endpoints that never require auth
+    if path in PUBLIC_PATHS or path.startswith("/static/"):
+        return await call_next(request)
+
+    # Check Authorization header, X-API-Key, or secure Session Cookie
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.split(" ", 1)[1].strip() if auth_header.startswith("Bearer ") else ""
+    api_key = request.headers.get("X-API-Key", "")
+    session_cookie = request.cookies.get(settings.ADMIN_SESSION_COOKIE, "")
+
+    is_authenticated = False
     if settings.APP_PASSWORD:
-        path = request.url.path
-        # Public endpoints that never require auth
-        if path == "/health" or path == "/login" or path.startswith("/static"):
-            return await call_next(request)
+        import hmac
+        if token and hmac.compare_digest(token.encode("utf-8"), settings.APP_PASSWORD.encode("utf-8")):
+            is_authenticated = True
+        elif api_key and hmac.compare_digest(api_key.encode("utf-8"), settings.APP_PASSWORD.encode("utf-8")):
+            is_authenticated = True
+        elif session_cookie and session_cookie == settings.APP_PASSWORD:
+            is_authenticated = True
 
-        # Check Authorization header, X-API-Key, or secure Session Cookie
-        auth_header = request.headers.get("Authorization", "")
-        token = auth_header.split(" ", 1)[1].strip() if auth_header.startswith("Bearer ") else ""
-        api_key = request.headers.get("X-API-Key", "")
-        session_cookie = request.cookies.get(settings.ADMIN_SESSION_COOKIE, "")
+    if is_authenticated:
+        return await call_next(request)
 
-        if token == settings.APP_PASSWORD or api_key == settings.APP_PASSWORD or session_cookie == settings.APP_PASSWORD:
-            return await call_next(request)
+    if path.startswith("/api/"):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=401, content={"detail": "Unauthorized: Valid APP_PASSWORD required"})
 
-        if path.startswith("/api/"):
-            from fastapi.responses import JSONResponse
-            return JSONResponse(status_code=401, content={"detail": "Unauthorized: Valid APP_PASSWORD required"})
-
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/login", status_code=303)
-
-    return await call_next(request)
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/login", status_code=303)
 
 # -------------------------------------------------------------
 # Web UI Routes
@@ -286,13 +295,39 @@ async def trace_view(request: Request, db: AsyncSession = Depends(get_db)):
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
-    """Health check endpoint for Render deployment and monitoring."""
+    """Public health check endpoint returning minimal status."""
+    return {"status": "ok"}
+
+@app.api_route("/health/live", methods=["GET", "HEAD"])
+async def health_live():
+    """Liveness probe returning minimal status."""
+    return {"status": "ok"}
+
+@app.api_route("/health/ready", methods=["GET", "HEAD"])
+async def health_ready():
+    """Readiness probe checking database connectivity."""
+    try:
+        from app.core.database import async_session_factory
+        from sqlalchemy import text
+        from fastapi.responses import JSONResponse
+        async with async_session_factory() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ready"}
+    except Exception:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=503, content={"status": "error", "detail": "Database unavailable"})
+
+@app.get("/api/health/detailed")
+async def health_detailed(request: Request):
+    """Authenticated endpoint returning detailed scheduler and system status."""
     sched_info = get_scheduler_status()
     return {
-        "status": "healthy",
+        "status": "ok",
         "service": "personal-job-agent",
         "env": settings.ENV,
         "scheduler_running": sched_info["running"],
         "scrape_interval_minutes": sched_info["interval_minutes"],
-        "next_scrape_at": sched_info["next_scrape_at"]
+        "next_scrape_at": sched_info["next_scrape_at"],
+        "next_cleanup_at": sched_info.get("next_cleanup_at"),
+        "retention_days": sched_info.get("retention_days")
     }

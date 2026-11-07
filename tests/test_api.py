@@ -2,9 +2,17 @@ import uuid
 import pytest
 import json
 from httpx import AsyncClient, ASGITransport
-from app.main import app
-from app.core.database import init_db, async_session_factory
+from app.config import settings
+from app.core.database import async_session_factory, init_db
 from app.core.models import JobPosting
+from app.main import app
+
+AUTH_HEADERS = {"Authorization": "Bearer supersecretpassword123"}
+
+@pytest.fixture(autouse=True)
+def configure_test_auth():
+    settings.APP_PASSWORD = "supersecretpassword123"
+    yield
 
 @pytest.mark.asyncio
 async def test_health_endpoint():
@@ -14,25 +22,34 @@ async def test_health_endpoint():
         res = await ac.get("/health")
         assert res.status_code == 200
         data = res.json()
-        assert data["status"] == "healthy"
-        assert data["service"] == "personal-job-agent"
+        assert data == {"status": "ok"}
 
         # Also verify HEAD /health
         res_head = await ac.head("/health")
         assert res_head.status_code == 200
+
+        # Verify /health/live
+        res_live = await ac.get("/health/live")
+        assert res_live.status_code == 200
+        assert res_live.json() == {"status": "ok"}
+
+        # Verify /health/ready
+        res_ready = await ac.get("/health/ready")
+        assert res_ready.status_code == 200
+        assert res_ready.json() == {"status": "ready"}
 
 @pytest.mark.asyncio
 async def test_dashboard_endpoint():
     await init_db()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        res = await ac.get("/")
+        res = await ac.get("/", headers=AUTH_HEADERS)
         assert res.status_code == 200
         assert "text/html" in res.headers.get("content-type", "")
         assert "Personal Job Agent" in res.text
 
         # Verify HEAD / returns 200
-        res_head = await ac.head("/")
+        res_head = await ac.head("/", headers=AUTH_HEADERS)
         assert res_head.status_code == 200
 
 @pytest.mark.asyncio
@@ -40,11 +57,11 @@ async def test_settings_and_trace_views():
     await init_db()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        res_settings = await ac.get("/settings")
+        res_settings = await ac.get("/settings", headers=AUTH_HEADERS)
         assert res_settings.status_code == 200
         assert "text/html" in res_settings.headers.get("content-type", "")
 
-        res_trace = await ac.get("/trace")
+        res_trace = await ac.get("/trace", headers=AUTH_HEADERS)
         assert res_trace.status_code == 200
         assert "text/html" in res_trace.headers.get("content-type", "")
 
@@ -72,21 +89,21 @@ async def test_job_detail_endpoint():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         # Existing job
-        res = await ac.get(f"/jobs/{job_id}")
+        res = await ac.get(f"/jobs/{job_id}", headers=AUTH_HEADERS)
         assert res.status_code == 200
         assert "text/html" in res.headers.get("content-type", "")
         assert "Senior AI Engineer" in res.text
         assert "TestCorp" in res.text
 
         # Non-existing job
-        res_404 = await ac.get("/jobs/9999999")
+        res_404 = await ac.get("/jobs/9999999", headers=AUTH_HEADERS)
         assert res_404.status_code == 404
 
 @pytest.mark.asyncio
 async def test_scraper_queries_endpoint():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        res = await ac.get("/api/scraper/queries")
+        res = await ac.get("/api/scraper/queries", headers=AUTH_HEADERS)
         assert res.status_code == 200
         data = res.json()
         assert "roles" in data

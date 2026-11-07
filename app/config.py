@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from typing import Any
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,7 +9,7 @@ DATA_DIR = BASE_DIR / "data"
 
 class Settings(BaseSettings):
     APP_NAME: str = "Personal Job Agent"
-    ENV: str = "production"
+    ENV: str = os.getenv("ENV", "development")
     DEBUG: bool = False
     PORT: int = int(os.getenv("PORT", 8000))
     HOST: str = "0.0.0.0"
@@ -32,6 +32,16 @@ class Settings(BaseSettings):
     # Security & Single-User Auth
     APP_PASSWORD: str = os.getenv("APP_PASSWORD", "")
     ADMIN_SESSION_COOKIE: str = "pja_session"
+
+    @model_validator(mode="after")
+    def validate_production_security(self) -> "Settings":
+        if self.ENV == "production":
+            if not self.APP_PASSWORD or len(self.APP_PASSWORD) < 12:
+                raise RuntimeError(
+                    "APP_PASSWORD is empty or shorter than 12 characters. In production mode (ENV='production'), "
+                    "a secure APP_PASSWORD of at least 12 characters is strictly required."
+                )
+        return self
 
     # Scheduler & Data Retention
     SCHEDULER_ENABLED: bool = True
