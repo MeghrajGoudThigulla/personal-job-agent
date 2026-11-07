@@ -17,7 +17,33 @@
       "cgpa": "8.71 / 10"
     }
   ],
+  "career_start": "2024-07-01",
+  "experience_tolerance_years": 1.0,
+  "skill_weights": {
+    "primary": 10.0,
+    "specialized": 4.5,
+    "generic": 1.5
+  },
+  "title_blocklist": [
+    "intern", "internship", "trainee", "fresher",
+    "senior", "sr", "lead", "architect", "staff", "principal",
+    "engineering manager", "manager", "vp", "director", "head of",
+    "qa", "sdet", "test engineer", "quality assurance", "automation tester",
+    "security engineer", "infosec", "embedded", "firmware", "hardware"
+  ],
   "skills": {
+    "primary": [
+      "python", "fastapi", "flask", "c#", ".net", ".net 8", "asp.net",
+      "asp.net core", "flutter", "react", "next.js", "nextjs", "typescript"
+    ],
+    "specialized": [
+      "postgresql", "postgres", "redis", "docker", "celery", "prisma", "alembic",
+      "signalr", "mediatr", "clean architecture", "cqrs", "onnx", "ocr", "paddleocr",
+      "embeddings", "rag", "supabase"
+    ],
+    "generic": [
+      "sql", "rest", "api", "aws", "gcp", "render", "linux", "git", "websockets"
+    ],
     "languages": [
       "Python",
       "C#",

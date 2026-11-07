@@ -1,8 +1,13 @@
+from datetime import datetime, timezone
 import json
-import re
+import logging
 from pathlib import Path
-from typing import Dict, Any, Tuple
+import re
+from typing import Any, Dict, Optional, Tuple
 from app.config import settings
+from app.core.clock import utcnow
+
+logger = logging.getLogger("personal_job_agent.stair_matcher")
 
 class StairMatcher:
     """
@@ -76,7 +81,96 @@ class StairMatcher:
     def __init__(self, profile_path: Path = None):
         self.profile_path = profile_path or settings.CANDIDATE_PROFILE_JSON
         self.profile = self._load_profile()
+        self._setup_profile_skills_and_weights()
         self._flatten_candidate_skills()
+
+    def _setup_profile_skills_and_weights(self):
+        skills = self.profile.get("skills", {})
+        if "primary" in skills and "specialized" in skills and "generic" in skills:
+            self.primary_skills = [s.lower() for s in skills["primary"]]
+            self.specialized_skills = [s.lower() for s in skills["specialized"]]
+            self.generic_skills = [s.lower() for s in skills["generic"]]
+        else:
+            logger.warning("Profile missing skills.primary/specialized/generic; falling back to hardcoded defaults.")
+            self.primary_skills = self.PRIMARY_CORE_SKILLS
+            self.specialized_skills = self.SPECIALIZED_TOOLS
+            self.generic_skills = self.GENERIC_TOOLS
+
+        weights = self.profile.get("skill_weights", {})
+        self.weight_primary = float(weights.get("primary", 10.0))
+        self.weight_specialized = float(weights.get("specialized", 4.5))
+        self.weight_generic = float(weights.get("generic", 1.5))
+
+    def candidate_years(self, today: Optional[datetime] = None) -> float:
+        """
+        Computes candidate experience in years from career_start in UTC, rounded to 0.1.
+        """
+        start_str = self.profile.get("career_start", "2024-07-01")
+        try:
+            career_start = datetime.strptime(start_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except Exception:
+            career_start = datetime(2024, 7, 1, tzinfo=timezone.utc)
+
+        current = today if today is not None else utcnow()
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=timezone.utc)
+
+        diff_days = (current - career_start).total_seconds() / 86400.0
+        return round(max(0.0, diff_days / 365.25), 1)
+
+    @staticmethod
+    def parse_experience_range(text: Optional[str]) -> Optional[Tuple[float, Optional[float]]]:
+        """
+        Parses experience ranges robustly from text:
+        - '2-4 years', '1 to 3 years of experience' -> (2.0, 4.0), (1.0, 3.0)
+        - '3+ yrs', 'minimum 2 years', 'at least 3 years' -> (3.0, None), (2.0, None)
+        - '5 years of experience', '5 years' -> (5.0, 5.0)
+        Returns (min_years, max_years) or None if no experience requirement stated.
+        """
+        if not text:
+            return None
+        cleaned = re.sub(r"\b\d+\s*(?:years?|yrs?)\s+ago\b", "", text.lower())
+
+        # 1. Ranges: 2-4 years, 1 to 3 yrs, 2 - 4 YOE
+        range_match = re.search(
+            r"\b(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)\+?\s*(?:years?|yrs?|yoe)(?:\s+of\s+(?:[\w\s-]+\s+)?experience)?\b",
+            cleaned,
+        )
+        if range_match:
+            return float(range_match.group(1)), float(range_match.group(2))
+
+        # 2. Plus / minimum / at least: 3+ years, minimum 2 years, at least 3 yrs
+        plus_match = re.search(
+            r"\b(?:minimum|min\.?|at\s+least)\s*(\d+(?:\.\d+)?)\+?\s*(?:years?|yrs?|yoe)(?:\s+of\s+(?:[\w\s-]+\s+)?experience)?\b",
+            cleaned,
+        )
+        if plus_match:
+            return float(plus_match.group(1)), None
+
+        plus_suffix = re.search(
+            r"\b(\d+(?:\.\d+)?)\s*\+\s*(?:years?|yrs?|yoe)(?:\s+of\s+(?:[\w\s-]+\s+)?experience)?\b",
+            cleaned,
+        )
+        if plus_suffix:
+            return float(plus_suffix.group(1)), None
+
+        # 3. Explicit experience requirement: '5 years of experience', 'with 2 years experience'
+        exact_match = re.search(
+            r"(?:\b(?:with|have|has|having|require[sd]?|needing)\s+)?(\d+(?:\.\d+)?)\s*(?:years?|yrs?|yoe)\s+(?:of\s+)?(?:[\w\s-]+\s+)?experience\b",
+            cleaned,
+        )
+        if exact_match:
+            val = float(exact_match.group(1))
+            return val, val
+
+        # 4. Standalone 'X years' requirement
+        standalone = re.search(r"\b(\d+(?:\.\d+)?)\s*(?:years?|yrs?|yoe)\b", cleaned)
+        if standalone:
+            val = float(standalone.group(1))
+            if 0.5 <= val <= 25.0:
+                return val, val
+
+        return None
 
     def _load_profile(self) -> Dict[str, Any]:
         if self.profile_path and self.profile_path.exists():
@@ -310,33 +404,44 @@ class StairMatcher:
         # Disqualify all non-India, worldwide generic remote, and unrestricted foreign locations
         return False, 0.0, "Excluded (Location Mismatch)", f"Location '{location}' is not located in or hiring from India"
 
-    def evaluate_match(self, title: str, company: str, location: str, description: str) -> Dict[str, Any]:
+    def evaluate_match(
+        self,
+        title: str,
+        company: str,
+        location: str,
+        description: str,
+        today: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
         """
-        Structure-Aware evaluation of a job posting against Meghraj's profile.
+        Structure-Aware evaluation of a job posting against candidate profile.
         Returns match score (0-100), tier, breakdown, matched/missing skills, and verdict.
         """
         desc_lower = description.lower()
         title_lower = title.lower()
-        full_text = f"{title_lower} {desc_lower}"
 
         role_category, tier = self.classify_role(title, description)
 
         # 1. Negative Filter Checks (Title Level Disqualifiers)
-        hard_disqualifiers = [
-            r"\bintern\b", r"\binternship\b", r"\btrainee\b", r"\bfresher\b",
-            r"\b0\s*years\b", r"\b0-1\s*years?\b",
-            r"\bsenior\b", r"\bsr\.?\b", r"\blead\b", r"\barchitect\b",
-            r"\bstaff\b", r"\bprincipal\b",
-            r"\bengineering\s+manager\b", r"\bmanager\b", r"\bvp\b", r"\bdirector\b",
-            r"\bhead\s+of\b", r"\bl5\b", r"\bl6\b", r"\bl7\b",
-            r"\bsde\s+iii\b", r"\bsoftware\s+engineer\s+iii\b", r"\bengineer\s+iii\b",
-            r"\bqa\b", r"\bsdet\b", r"\btest\s+engineer\b", r"\bquality\s+assurance\b",
-            r"\bautomation\s+tester\b", r"\bsecurity\s+engineer\b", r"\binfosec\b",
-            r"\bembedded\b", r"\bfirmware\b", r"\bhardware\b"
-        ]
+        cy = self.candidate_years(today)
+        raw_blocklist = self.profile.get("title_blocklist")
+        if raw_blocklist:
+            blocklist = [t.lower() for t in raw_blocklist]
+        else:
+            blocklist = [
+                "intern", "internship", "trainee", "fresher",
+                "senior", "sr", "lead", "architect", "staff", "principal",
+                "engineering manager", "manager", "vp", "director", "head of",
+                "qa", "sdet", "test engineer", "quality assurance", "automation tester",
+                "security engineer", "infosec", "embedded", "firmware", "hardware"
+            ]
 
-        for disq in hard_disqualifiers:
-            if re.search(disq, title_lower):
+        # Allow senior titles once candidate_years crosses 3.0
+        if cy >= 3.0:
+            senior_terms = {"senior", "sr", "lead", "staff", "principal"}
+            blocklist = [t for t in blocklist if t not in senior_terms]
+
+        for disq in blocklist:
+            if re.search(rf"\b{re.escape(disq)}\b", title_lower):
                 return {
                     "score": 15.0,
                     "tier": "Excluded",
@@ -346,7 +451,7 @@ class StairMatcher:
                     "missing_skills": [],
                     "location_category": "Excluded",
                     "location_feasibility": "Title Disqualified",
-                    "recommendation": "Skip"
+                    "recommendation": "Skip",
                 }
 
         # Check for disqualified primary tech in title (e.g. Java Engineer, Go Engineer)
@@ -361,7 +466,7 @@ class StairMatcher:
                     "missing_skills": [],
                     "location_category": "Excluded",
                     "location_feasibility": "Tech Disqualified",
-                    "recommendation": "Skip"
+                    "recommendation": "Skip",
                 }
 
         # 2. Location Feasibility Gate (Strictly India Only)
@@ -381,38 +486,35 @@ class StairMatcher:
                 "location_category": loc_cat,
                 "location_feasibility": loc_detail,
                 "verdict": f"Excluded due to location: {loc_detail}",
-                "recommendation": "Skip"
+                "recommendation": "Skip",
             }
 
         # 3. Technical Stack Alignment with Weighted Skill Taxonomy
-        # Weight 5: Primary Core Skills (Python, FastAPI, C#, .NET, React, TypeScript, Flutter)
-        # Weight 3: Databases & Specialized Tools (Postgres, Redis, Docker, Celery, Prisma, etc.)
-        # Weight 1: Generic & Auxiliary Tools (SQL, REST, API, Git, Linux, AWS, GCP)
         found_matches = []
         weighted_points = 0.0
 
-        for ps in self.PRIMARY_CORE_SKILLS:
+        for ps in self.primary_skills:
             if self.match_skill(ps, desc_lower) or self.match_skill(ps, title_lower):
                 if ps not in found_matches:
                     found_matches.append(ps)
-                    weighted_points += 10.0 # Weight 5
+                    weighted_points += self.weight_primary
 
-        for st in self.SPECIALIZED_TOOLS:
+        for st in self.specialized_skills:
             if self.match_skill(st, desc_lower):
                 if st not in found_matches:
                     found_matches.append(st)
-                    weighted_points += 4.5 # Weight 3
+                    weighted_points += self.weight_specialized
 
-        for gt in self.GENERIC_TOOLS:
+        for gt in self.generic_skills:
             if self.match_skill(gt, desc_lower):
                 if gt not in found_matches:
                     found_matches.append(gt)
-                    weighted_points += 1.5 # Weight 1
+                    weighted_points += self.weight_generic
 
-        # Candidate MUST have at least one primary core stack match (Python, C#/.NET, React, Flutter, etc.)
+        # Candidate MUST have at least one primary core stack match
         has_primary_core = any(
             self.match_skill(ps, desc_lower) or self.match_skill(ps, title_lower)
-            for ps in self.PRIMARY_CORE_SKILLS
+            for ps in self.primary_skills
         )
         if not has_primary_core:
             return {
@@ -420,11 +522,11 @@ class StairMatcher:
                 "tier": "Excluded (Tech Mismatch)",
                 "role_category": role_category,
                 "matched_skills": found_matches,
-                "missing_skills": self.PRIMARY_CORE_SKILLS[:4],
+                "missing_skills": self.primary_skills[:4],
                 "location_category": loc_cat,
                 "location_feasibility": loc_detail,
-                "verdict": "Excluded: Job does not require any core resume technology (Python, C#/.NET, React/TypeScript, Flutter)",
-                "recommendation": "Skip"
+                "verdict": "Excluded: Job does not require any core resume technology",
+                "recommendation": "Skip",
             }
 
         potential_skills = ["kubernetes", "kafka", "graphql", "go", "java", "terraform"]
@@ -434,101 +536,40 @@ class StairMatcher:
         tech_score = min(40.0, round(weighted_points, 1))
 
         # 5. Seniority & Experience Assessment (Max 35 pts)
-        # Candidate rule: 0 to 2 years 3 months (0 - 2.25 YOE).
-        # Up to 3 years allowed ONLY if resume is a strong match (core stack, >=3 tech overlaps, score >= 75%).
-        # Absolutely NOTHING higher than 3 years.
-        desc_clean = re.sub(r"[0-9]+\s*(?:years?|yrs?)\s+ago", "", desc_lower)
+        prelim_score = 35.0 + tech_score + loc_score
 
-        # Tokenize experience mentions
-        range_pat = re.compile(r"\b([0-9]+(?:\.[0-9]+)?)\s*(?:-|to)\s*([0-9]+(?:\.[0-9]+)?)\s*(?:\+)?\s*(?:years?|yrs?|yoe)\b")
-        plus_pat = re.compile(r"\b([0-9]+(?:\.[0-9]+)?)\s*\+\s*(?:years?|yrs?|yoe)\b")
-        min_pat = re.compile(r"\b(?:minimum|min|at\s+least)\s+([0-9]+(?:\.[0-9]+)?)\s*(?:years?|yrs?|yoe)\b")
-        exact_pat = re.compile(r"(?:\b(?:with|have|has|having|requires?|needing)\s+)?([0-9]+(?:\.[0-9]+)?)\s*(?:years?|yrs?|yoe)\s+(?:of\s+)?(?:relevant\s+|hands-on\s+|industry\s+|professional\s+|work\s+)?experience\b")
+        exp_range = self.parse_experience_range(description)
+        tolerance = float(self.profile.get("experience_tolerance_years", 1.0))
+        cy = self.candidate_years(today)
+        is_strong_match = has_primary_core and (prelim_score >= 80.0)
 
-        yoe_tokens = []
-        def _mask_range(m):
-            yoe_tokens.append(("range", float(m.group(1)), float(m.group(2)), m.group(0)))
-            return " " * len(m.group(0))
+        if exp_range is not None:
+            min_yoe, max_yoe = exp_range
+            max_allowed = (cy + tolerance) if is_strong_match else cy
 
-        masked_text = range_pat.sub(_mask_range, desc_clean)
-
-        for m in plus_pat.finditer(masked_text):
-            val = float(m.group(1))
-            yoe_tokens.append(("plus", val, val + 2.0, m.group(0)))
-
-        for m in min_pat.finditer(masked_text):
-            val = float(m.group(1))
-            yoe_tokens.append(("min", val, val, m.group(0)))
-
-        for m in exact_pat.finditer(masked_text):
-            val = float(m.group(1))
-            yoe_tokens.append(("exact", val, val, m.group(0)))
-
-        # Rule 1: Strictly > 3 years ceiling ("nothing higher than 3")
-        for kind, low, high, raw in yoe_tokens:
-            if kind in ("plus", "min", "exact") and low > 3.0:
+            if min_yoe > max_allowed:
                 return {
                     "score": 15.0,
-                    "tier": "Excluded (Experience > 3 YOE)",
+                    "tier": "Excluded (Experience)",
                     "role_category": role_category,
                     "matched_skills": found_matches,
                     "missing_skills": missing_skills,
                     "location_category": loc_cat,
                     "location_feasibility": loc_detail,
-                    "verdict": f"Excluded: Required experience ({raw}) strictly exceeds candidate ceiling of 3 years",
-                    "recommendation": "Skip"
+                    "verdict": f"Excluded: Stated experience requirement exceeds candidate ceiling ({max_allowed:.1f} YOE)",
+                    "recommendation": "Skip",
                 }
-            if kind == "range":
-                if low > 3.0 or (low >= 3.0 and high > 3.0) or (low > 2.25 and high > 3.0):
-                    return {
-                        "score": 15.0,
-                        "tier": "Excluded (Experience > 3 YOE)",
-                        "role_category": role_category,
-                        "matched_skills": found_matches,
-                        "missing_skills": missing_skills,
-                        "location_category": loc_cat,
-                        "location_feasibility": loc_detail,
-                        "verdict": f"Excluded: Required experience range ({raw}) strictly exceeds candidate ceiling of 3 years",
-                        "recommendation": "Skip"
-                    }
 
-        # Rule 2: ~3 YOE checks ("or 3 if my resume is a strong match")
-        prelim_score = 30.0 + tech_score + loc_score
-        is_strong_match = has_primary_core and (len(found_matches) >= 3) and (prelim_score >= 75.0)
-
-        requires_strong = False
-        strong_reason = ""
-        for kind, low, high, raw in yoe_tokens:
-            if kind in ("plus", "min", "exact") and 2.25 < low <= 3.0:
-                requires_strong = True
-                strong_reason = raw
-                break
-            if kind == "range" and (high > 2.25 or (low <= 2.25 and high >= 3.0)):
-                requires_strong = True
-                strong_reason = raw
-                break
-
-        if requires_strong:
-            if not is_strong_match:
-                return {
-                    "score": 15.0,
-                    "tier": "Excluded (Experience 3 YOE - Needs Strong Match)",
-                    "role_category": role_category,
-                    "matched_skills": found_matches,
-                    "missing_skills": missing_skills,
-                    "location_category": loc_cat,
-                    "location_feasibility": loc_detail,
-                    "verdict": f"Excluded: Role asks for ~3 YOE ({strong_reason}), but candidate profile is not a strong match (needs score >= 75% with core stack)",
-                    "recommendation": "Skip"
-                }
-            seniority_score = 30.0
-            exp_note = f"~3 YOE ({strong_reason}) accepted due to strong stack match ({prelim_score}%)"
+            if min_yoe > cy and is_strong_match:
+                seniority_score = 30.0
+                exp_note = f"Stated {min_yoe} YOE accepted under strong match allowance ({prelim_score:.1f} prelim score)"
+            else:
+                seniority_score = 35.0
+                exp_note = f"Within candidate experience ceiling ({min_yoe} YOE <= {cy:.1f} YOE)"
         else:
-            # 0 to 2 years 3 months primary band
-            has_primary_band = bool(re.search(r"0-2|0\s*to\s*2|1-2|1\s*to\s*2|0-1|0\s*to\s*1|fresher|junior|associate", full_text))
-            seniority_score = 35.0 if has_primary_band else 30.0
-            exp_note = "Within candidate primary band (0 to 2 years 3 months)"
-            exp_note = "Within candidate primary band (0 to 2 years 3 months)"
+            # When posting states no years, do not penalize
+            seniority_score = 35.0
+            exp_note = "No stated experience requirement (no penalty applied)"
 
         # Total STAIR score (Seniority max 35 + Tech max 40 + Location max 25 = 100 max)
         total_score = min(100.0, round(seniority_score + tech_score + loc_score, 1))
@@ -547,5 +588,5 @@ class StairMatcher:
             "location_category": loc_cat,
             "location_feasibility": loc_detail,
             "verdict": verdict,
-            "recommendation": "Apply" if total_score >= 70.0 else ("Consider" if total_score >= 50.0 else "Skip")
+            "recommendation": "Apply" if total_score >= 70.0 else ("Consider" if total_score >= 50.0 else "Skip"),
         }
