@@ -22,6 +22,14 @@ services:
         value: "60"
       - key: MIN_MATCH_SCORE_NOTIFY
         value: "70"
+      - key: MAX_NOTIFY_ATTEMPTS
+        value: "5"
+      - key: MAX_JOB_AGE_DAYS
+        value: "7"
+      - key: DATA_RETENTION_DAYS
+        value: "60"
+      - key: SEEN_RETENTION_DAYS
+        value: "365"
       - key: AUTO_TAILOR_HIGH_MATCH
         value: "true"
       - key: LLM_PROVIDER
