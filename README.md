@@ -210,6 +210,8 @@ alembic upgrade head
 | `SCRAPE_INTERVAL_MINUTES` | Frequency of job discovery cycles | `60` |
 | `MIN_MATCH_SCORE_NOTIFY` | Minimum STAIR match score (0-100) to trigger alerts | `70` |
 | `MAX_JOB_AGE_DAYS` | Freshness cutoff gate: discard jobs posted older than N days | `7` |
+| `DATA_RETENTION_DAYS` | Auto-cleanup retention period for jobs and applications | `60` |
+| `SEEN_RETENTION_DAYS` | Persistent deduplication history retention for seen jobs | `365` |
 | `AUTO_TAILOR_HIGH_MATCH` | Automatically generate tailored resumes & outreach | `true` |
 | `LLM_PROVIDER` | LLM router provider (`auto`, `groq`, `nvidia`) | `auto` |
 | `GROQ_API_KEY` | Groq Cloud API Key | Optional |

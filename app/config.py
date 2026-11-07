@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     MIN_MATCH_SCORE_NOTIFY: int = 70
     MAX_JOB_AGE_DAYS: int = int(os.getenv("MAX_JOB_AGE_DAYS", "7"))
     DATA_RETENTION_DAYS: int = int(os.getenv("DATA_RETENTION_DAYS", "60"))
+    SEEN_RETENTION_DAYS: int = int(os.getenv("SEEN_RETENTION_DAYS", "365"))
     AUTO_CLEANUP_ENABLED: bool = os.getenv("AUTO_CLEANUP_ENABLED", "true").lower() in ("true", "1")
 
     # LLM Configuration

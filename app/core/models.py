@@ -138,3 +138,20 @@ class LoginAttempt(Base):
     ip_address = Column(String(50), nullable=False, index=True)
     attempted_at = Column(UTCDateTime, default=utcnow, index=True)
     success = Column(Boolean, default=False)
+
+
+class SeenJob(Base):
+    __tablename__ = "seen_jobs"
+
+    url_hash = Column(String(64), primary_key=True)
+    fingerprint = Column(String(64), index=True, nullable=False)
+    first_seen_at = Column(UTCDateTime, default=utcnow, nullable=False)
+    last_seen_at = Column(UTCDateTime, default=utcnow, nullable=False, index=True)
+
+    def to_dict(self):
+        return {
+            "url_hash": self.url_hash,
+            "fingerprint": self.fingerprint,
+            "first_seen_at": self.first_seen_at.isoformat() if self.first_seen_at else None,
+            "last_seen_at": self.last_seen_at.isoformat() if self.last_seen_at else None,
+        }

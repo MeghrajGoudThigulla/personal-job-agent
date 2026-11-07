@@ -1,5 +1,6 @@
 import asyncio
 from datetime import timedelta
+import hashlib
 import json
 import logging
 from typing import Any, Dict
@@ -8,7 +9,7 @@ from app.config import settings
 from app.core.clock import utcnow
 from app.core.database import async_session_factory
 from app.core.fingerprint import compute_fingerprint
-from app.core.models import JobPosting, TailoredApplication
+from app.core.models import JobPosting, SeenJob, TailoredApplication
 from app.core.trace import log_audit_event
 from app.intelligence.stair_matcher import StairMatcher
 from app.intelligence.resume_tailor import ResumeTailor
@@ -81,6 +82,7 @@ class ScraperEngine:
                 url = item.get("url")
                 if not url or url in batch_urls:
                     continue
+                url_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()
 
                 fp = compute_fingerprint(
                     company=item.get("company", ""),
@@ -90,18 +92,26 @@ class ScraperEngine:
                 if fp in batch_fingerprints:
                     continue
 
-                # 1. URL-level deduplication (exact equality)
-                existing = await session.execute(select(JobPosting.id).where(JobPosting.url == url))
-                if existing.scalar_one_or_none() is not None:
+                now = utcnow()
+
+                # 1. Check seen_jobs table (persistent dedup memory that survives retention purges)
+                seen_stmt = select(SeenJob).where(
+                    (SeenJob.url_hash == url_hash) | (SeenJob.fingerprint == fp)
+                )
+                existing_seen = (await session.execute(seen_stmt)).scalar_one_or_none()
+                if existing_seen is not None:
+                    existing_seen.last_seen_at = now
                     batch_urls.add(url)
                     batch_fingerprints.add(fp)
                     continue
 
-                # 2. Deterministic fingerprint deduplication (exact equality, no ilike)
-                existing_fp = await session.execute(
-                    select(JobPosting.id).where(JobPosting.fingerprint == fp)
+                # 2. Check jobs table (exact URL or exact fingerprint)
+                existing_job = await session.execute(
+                    select(JobPosting.id).where(
+                        (JobPosting.url == url) | (JobPosting.fingerprint == fp)
+                    )
                 )
-                if existing_fp.scalar_one_or_none() is not None:
+                if existing_job.scalar_one_or_none() is not None:
                     batch_urls.add(url)
                     batch_fingerprints.add(fp)
                     continue
@@ -157,6 +167,14 @@ class ScraperEngine:
                     notified=False
                 )
                 session.add(job)
+                session.add(
+                    SeenJob(
+                        url_hash=url_hash,
+                        fingerprint=fp,
+                        first_seen_at=now,
+                        last_seen_at=now,
+                    )
+                )
                 batch_urls.add(url)
                 batch_fingerprints.add(fp)
                 await session.flush() # Populate job.id
