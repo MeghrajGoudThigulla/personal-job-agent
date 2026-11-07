@@ -41,11 +41,16 @@ class TelegramNotifier:
 
         skills_str = ", ".join(matched_skills[:6]) if matched_skills else "Python, Backend"
 
+        posted_str = job_data.get("posted_at_ist") or job_data.get("posted_date") or "Recently discovered"
+        if job_data.get("posted_date_unverified"):
+            posted_str += " (unverified date)"
+
         text = (
             f"🚀 *NEW HIGH-MATCH JOB DISCOVERED*\n\n"
             f"🏢 *Company:* {company}\n"
             f"💼 *Role:* {title}\n"
             f"📍 *Location:* {location}\n"
+            f"📅 *Posted:* {posted_str}\n"
             f"🎯 *Match Score:* `{match_score}%` ({match_tier})\n"
             f"🏷️ *Category:* {role_category}\n"
             f"🛠️ *Stack Match:* {skills_str}\n\n"

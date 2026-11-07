@@ -125,6 +125,19 @@
                         <i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>{{ job.location }}
                     </span>
 
+                    <!-- Posted Date -->
+                    <span class="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-slate-300 font-medium">
+                        <i class="fa-regular fa-clock text-slate-400 mr-1"></i>
+                        {% if job.posted_at_ist %}{{ job.posted_at_ist[:16] }}
+                        {% elif job.posted_date %}{{ job.posted_date }}
+                        {% else %}Recent{% endif %}
+                    </span>
+                    {% if job.posted_date_unverified %}
+                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">
+                        unverified date
+                    </span>
+                    {% endif %}
+
                     <!-- Status Badge -->
                     <span class="px-2 py-0.5 rounded text-[11px] uppercase font-semibold
                         {% if job.status == 'tailored' %}bg-indigo-500/20 text-indigo-300

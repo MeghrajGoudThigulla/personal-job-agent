@@ -37,6 +37,10 @@ class DiscordNotifier:
         # Color: Green (>=85%), Blue (>=70%), Orange (other)
         color = 0x10B981 if match_score >= 85 else (0x3B82F6 if match_score >= 70 else 0xF59E0B)
 
+        posted_str = job_data.get("posted_at_ist") or job_data.get("posted_date") or "Recently discovered"
+        if job_data.get("posted_date_unverified"):
+            posted_str += " (unverified date)"
+
         embed = {
             "title": f"🎯 {title} @ {company}",
             "url": url,
@@ -46,6 +50,7 @@ class DiscordNotifier:
                 {"name": "Match Score", "value": f"**{match_score}%**", "inline": True},
                 {"name": "Tier", "value": match_tier, "inline": True},
                 {"name": "Location", "value": location, "inline": True},
+                {"name": "Posted", "value": posted_str, "inline": True},
                 {"name": "Role Category", "value": role_category, "inline": True},
                 {"name": "Matched Skills", "value": ", ".join(matched_skills[:8]) if matched_skills else "Python, Backend", "inline": False}
             ],

@@ -1,8 +1,9 @@
 import asyncio
+from datetime import timedelta
 import json
 import logging
 from typing import Any, Dict
-from sqlalchemy import select
+from sqlalchemy import func, select
 from app.config import settings
 from app.core.clock import utcnow
 from app.core.database import async_session_factory
@@ -13,6 +14,7 @@ from app.intelligence.resume_tailor import ResumeTailor
 from app.intelligence.outreach_generator import OutreachGenerator
 from app.intelligence.pdf_compiler import PDFCompiler
 from app.notifiers.dispatcher import NotificationDispatcher
+from app.scrapers.base import parse_posted_date
 from app.scrapers.direct_ats import DirectATSScraper
 from app.scrapers.remote_boards import RemoteBoardsScraper
 from app.scrapers.search_dorks import SearchDorksScraper
@@ -94,6 +96,24 @@ class ScraperEngine:
                     if existing_fp.scalar_one_or_none() is not None:
                         continue # Already recorded from another source platform
 
+                # Freshness Gate: Parse posted_date and verify age <= MAX_JOB_AGE_DAYS
+                raw_posted_date = item.get("posted_date")
+                parsed_posted_at = parse_posted_date(raw_posted_date)
+                now = utcnow()
+                freshness_cutoff = now - timedelta(days=settings.MAX_JOB_AGE_DAYS)
+
+                if parsed_posted_at is not None:
+                    posted_at = parsed_posted_at
+                    posted_date_unverified = False
+                    if posted_at < freshness_cutoff:
+                        logger.debug(
+                            f"Dropping stale job '{item.get('title')}' posted at {posted_at} (older than {settings.MAX_JOB_AGE_DAYS} days)"
+                        )
+                        continue
+                else:
+                    posted_at = None
+                    posted_date_unverified = True
+
                 # STAIR Match Evaluation
                 eval_res = self.matcher.evaluate_match(
                     title=item.get("title", ""),
@@ -116,7 +136,9 @@ class ScraperEngine:
                     source_platform=item.get("source_platform", "Web")[:100],
                     description=item.get("description", ""),
                     posted_date=str(item.get("posted_date", "") or "")[:100],
-                    discovered_at=utcnow(),
+                    posted_at=posted_at,
+                    posted_date_unverified=posted_date_unverified,
+                    discovered_at=now,
                     match_score=score,
                     match_tier=tier[:100],
                     match_reason=json.dumps(eval_res),
@@ -145,12 +167,15 @@ class ScraperEngine:
         # DB-backed queue: Pick up unnotified high-match jobs ordered by score descending.
         # This processes up to 5 per cycle to prevent LLM rate limits (429) without starving any backlog.
         pending_jobs = []
+        notify_cutoff = utcnow() - timedelta(days=settings.MAX_JOB_AGE_DAYS)
+        effective_dt = func.coalesce(JobPosting.posted_at, JobPosting.discovered_at)
         async with async_session_factory() as session:
             stmt = (
                 select(JobPosting)
                 .where(
                     JobPosting.match_score >= settings.MIN_MATCH_SCORE_NOTIFY,
-                    JobPosting.notified == False
+                    JobPosting.notified == False,
+                    effective_dt >= notify_cutoff
                 )
                 .order_by(JobPosting.match_score.desc(), JobPosting.discovered_at.desc())
                 .limit(5)

@@ -10,7 +10,12 @@
             <span>•</span>
             <span>{{ job.source_platform }}</span>
             <span>•</span>
-            <span>Discovered: {{ job.discovered_at[:10] if job.discovered_at else 'Recent' }}</span>
+            <span>Posted: {% if job.posted_at_ist %}{{ job.posted_at_ist[:16] }}{% elif job.posted_date %}{{ job.posted_date }}{% else %}Recent{% endif %}</span>
+            {% if job.posted_date_unverified %}
+            <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">unverified date</span>
+            {% endif %}
+            <span>•</span>
+            <span>Discovered: {{ job.discovered_at_ist[:16] if job.discovered_at_ist else (job.discovered_at[:10] if job.discovered_at else 'Recent') }}</span>
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">{{ job.title }}</h1>
         <div class="text-sm text-slate-300 font-medium mt-0.5">

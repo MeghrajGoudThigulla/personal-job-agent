@@ -17,6 +17,8 @@ class JobPosting(Base):
     source_platform = Column(String(100), nullable=False, index=True)
     description = Column(Text, default="")
     posted_date = Column(String(100), default="")
+    posted_at = Column(UTCDateTime, nullable=True, index=True)
+    posted_date_unverified = Column(Boolean, default=False, nullable=False)
     discovered_at = Column(UTCDateTime, default=utcnow, index=True)
 
     # Intelligence Match Details
@@ -47,6 +49,9 @@ class JobPosting(Base):
             "source_platform": self.source_platform,
             "description": self.description,
             "posted_date": self.posted_date,
+            "posted_at": self.posted_at.isoformat() if self.posted_at else None,
+            "posted_at_ist": format_ist(self.posted_at) if self.posted_at else None,
+            "posted_date_unverified": bool(self.posted_date_unverified),
             "discovered_at": self.discovered_at.isoformat() if self.discovered_at else None,
             "discovered_at_ist": format_ist(self.discovered_at) if self.discovered_at else None,
             "match_score": self.match_score,
