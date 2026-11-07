@@ -74,6 +74,7 @@
                     <option value="tailored">Tailored</option>
                     <option value="applied">Applied</option>
                     <option value="archived">Archived</option>
+                    <option value="unverified">Location Unverified</option>
                 </select>
             </div>
 
@@ -208,7 +209,14 @@
         const params = new URLSearchParams();
         if (search) params.append('search', search);
         if (score) params.append('min_score', score);
-        if (status && status !== 'all') params.append('status', status);
+        if (status && status !== 'all') {
+            if (status === 'unverified') {
+                params.append('tier', 'unverified');
+                params.append('min_score', '0');
+            } else {
+                params.append('status', status);
+            }
+        }
         if (source && source !== 'all') params.append('source', source);
 
         window.location.href = `/?${params.toString()}`;

@@ -71,7 +71,7 @@ class DirectATSScraper(BaseScraper):
         company_name = board.capitalize()
         for j in data.get("jobs", []):
             title = j.get("title", "")
-            location = j.get("location", "Remote")
+            location = j.get("location") or "Unknown"
             is_remote = j.get("isRemote", False)
             job_url = j.get("jobUrl", f"https://jobs.ashbyhq.com/{board}/{j.get('id')}")
             desc = j.get("descriptionHtml", "") or j.get("descriptionPlain", "")
@@ -79,7 +79,7 @@ class DirectATSScraper(BaseScraper):
                 "title": title,
                 "company": company_name,
                 "location": location,
-                "remote_status": "Remote" if is_remote or "remote" in location.lower() else "Hybrid/Onsite",
+                "remote_status": "Remote" if is_remote or "remote" in location.lower() else ("Unknown" if location == "Unknown" else "Hybrid/Onsite"),
                 "url": job_url,
                 "source_platform": "Ashby",
                 "description": desc,

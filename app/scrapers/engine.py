@@ -149,8 +149,8 @@ class ScraperEngine:
                 job = JobPosting(
                     title=item.get("title", "")[:500],
                     company=item.get("company", "")[:250],
-                    location=item.get("location", "Remote")[:500],
-                    remote_status=item.get("remote_status", "Remote")[:100],
+                    location=(item.get("location") or "Unknown")[:500],
+                    remote_status=(item.get("remote_status") or "Unknown")[:100],
                     role_category=role_cat[:250],
                     fingerprint=fp,
                     url=url[:1000],

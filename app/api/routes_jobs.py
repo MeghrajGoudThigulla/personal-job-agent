@@ -11,6 +11,7 @@ router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
 async def get_jobs(
     status: Optional[str] = None,
     min_score: Optional[float] = None,
+    tier: Optional[str] = None,
     source: Optional[str] = None,
     search: Optional[str] = None,
     limit: int = 50,
@@ -21,6 +22,11 @@ async def get_jobs(
 
     if status and status != "all":
         query = query.where(JobPosting.status == status)
+    if tier and tier != "all":
+        if tier == "unverified":
+            query = query.where(JobPosting.match_tier == "Excluded (Location Unverified)")
+        else:
+            query = query.where(JobPosting.match_tier == tier)
     if min_score is not None:
         query = query.where(JobPosting.match_score >= min_score)
     if source and source != "all":

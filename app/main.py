@@ -273,6 +273,7 @@ async def dashboard_view(
     request: Request,
     status: Optional[str] = None,
     min_score: Optional[float] = None,
+    tier: Optional[str] = None,
     source: Optional[str] = None,
     search: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
@@ -294,6 +295,11 @@ async def dashboard_view(
     query = select(JobPosting).order_by(desc(JobPosting.match_score), desc(JobPosting.discovered_at))
     if status and status != "all":
         query = query.where(JobPosting.status == status)
+    if tier and tier != "all":
+        if tier == "unverified":
+            query = query.where(JobPosting.match_tier == "Excluded (Location Unverified)")
+        else:
+            query = query.where(JobPosting.match_tier == tier)
     if min_score is not None and min_score > 0:
         query = query.where(JobPosting.match_score >= min_score)
     if source and source != "all":

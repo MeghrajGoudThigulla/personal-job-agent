@@ -244,6 +244,27 @@ class StairMatcher:
             matched_reg = re.search(r"\b(emea|amer|americas|latam|europe|us|uk|apac)\b", title_lower).group(1).upper()
             return False, 0.0, "Excluded (Restricted Region)", f"Title restricted to non-India region '{matched_reg}'"
 
+        # Special Branch: Empty or Unknown location handling
+        if not loc_clean or loc_clean in ("unknown", "unspecified", "none", "null"):
+            # 1. Scan description for exclusions
+            for disq in self.DISQUALIFIED_REGIONS:
+                if re.search(rf"\b{re.escape(disq)}\b", desc_sample):
+                    return False, 0.0, "Excluded (Restricted Region)", f"Description restricted to '{disq}'"
+            for city in self.NON_INDIA_CITIES:
+                if re.search(rf"\b{re.escape(city)}\b", desc_sample):
+                    return False, 0.0, "Excluded (Non-India Onsite)", f"Description mentions foreign location: '{city}'"
+
+            # 2. Scan description for explicit India eligibility
+            has_india_phrase = bool(
+                re.search(r"\b(india|work from india|working from india|based in india|hiring in india|ist)\b", desc_sample)
+            )
+            has_indian_city = any(re.search(rf"\b{re.escape(c)}\b", desc_sample) for c in self.INDIAN_CITIES)
+            if has_india_phrase or has_indian_city:
+                return True, 25.0, "Remote (India, from posting)", "India eligibility explicitly mentioned in posting description"
+
+            # 3. Otherwise: LOCATION_UNVERIFIED and score 0
+            return False, 0.0, "LOCATION_UNVERIFIED", "Location is unknown and description lacks explicit India confirmation"
+
         # 1. Check for foreign indicators if 'india' is not explicitly in location
         if "india" not in loc_clean:
             for disq in self.DISQUALIFIED_REGIONS:
@@ -346,9 +367,14 @@ class StairMatcher:
         # 2. Location Feasibility Gate (Strictly India Only)
         is_loc_eligible, loc_score, loc_cat, loc_detail = self.evaluate_location(location, description, title=title)
         if not is_loc_eligible:
+            tier_name = (
+                "Excluded (Location Unverified)"
+                if loc_cat == "LOCATION_UNVERIFIED"
+                else ("Excluded (Restricted Region)" if "Restricted" in loc_cat else "Excluded (Location)")
+            )
             return {
-                "score": 15.0,
-                "tier": "Excluded (Location)",
+                "score": 0.0 if loc_cat == "LOCATION_UNVERIFIED" else 15.0,
+                "tier": tier_name,
                 "role_category": role_category,
                 "matched_skills": [],
                 "missing_skills": [],

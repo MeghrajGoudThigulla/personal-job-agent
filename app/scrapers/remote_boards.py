@@ -59,11 +59,12 @@ class RemoteBoardsScraper(BaseScraper):
         data = res.json()
         results = []
         for j in data.get("jobs", []):
+            loc = j.get("jobGeo") or "Unknown"
             results.append({
                 "title": j.get("jobTitle", ""),
                 "company": j.get("companyName", ""),
-                "location": j.get("jobGeo", "Remote"),
-                "remote_status": "Remote",
+                "location": loc,
+                "remote_status": "Remote" if "remote" in loc.lower() else ("Unknown" if loc == "Unknown" else "Hybrid/Onsite"),
                 "url": j.get("url", ""),
                 "source_platform": "Jobicy",
                 "description": j.get("jobDescription", ""),
@@ -83,11 +84,12 @@ class RemoteBoardsScraper(BaseScraper):
         for j in items[:50]:
             if not isinstance(j, dict):
                 continue
+            loc = j.get("location") or "Unknown"
             results.append({
                 "title": j.get("position", ""),
                 "company": j.get("company", ""),
-                "location": j.get("location", "Remote"),
-                "remote_status": "Remote",
+                "location": loc,
+                "remote_status": "Remote" if "remote" in loc.lower() else ("Unknown" if loc == "Unknown" else "Hybrid/Onsite"),
                 "url": j.get("url", f"https://remoteok.com/l/{j.get('id')}"),
                 "source_platform": "RemoteOK",
                 "description": j.get("description", ""),
@@ -103,11 +105,12 @@ class RemoteBoardsScraper(BaseScraper):
         data = res.json()
         results = []
         for j in data.get("jobs", []):
+            loc = j.get("candidate_required_location") or "Unknown"
             results.append({
                 "title": j.get("title", ""),
                 "company": j.get("company_name", ""),
-                "location": j.get("candidate_required_location", "Remote"),
-                "remote_status": "Remote",
+                "location": loc,
+                "remote_status": "Remote" if "remote" in loc.lower() else ("Unknown" if loc == "Unknown" else "Hybrid/Onsite"),
                 "url": j.get("url", ""),
                 "source_platform": "Remotive",
                 "description": j.get("description", ""),
@@ -123,11 +126,12 @@ class RemoteBoardsScraper(BaseScraper):
         data = res.json()
         results = []
         for j in data.get("data", []):
+            loc = j.get("location") or "Unknown"
             results.append({
                 "title": j.get("title", ""),
                 "company": j.get("company_name", ""),
-                "location": j.get("location", "Remote"),
-                "remote_status": "Remote" if j.get("remote") else "Hybrid/Onsite",
+                "location": loc,
+                "remote_status": "Remote" if j.get("remote") or "remote" in loc.lower() else ("Unknown" if loc == "Unknown" else "Hybrid/Onsite"),
                 "url": j.get("url", ""),
                 "source_platform": "Arbeitnow",
                 "description": j.get("description", ""),
