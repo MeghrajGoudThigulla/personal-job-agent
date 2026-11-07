@@ -46,3 +46,4 @@ def downgrade() -> None:
     with op.batch_alter_table("jobs") as batch_op:
         batch_op.drop_index("ix_jobs_fingerprint")
         batch_op.drop_column("fingerprint")
+

@@ -209,6 +209,7 @@ alembic upgrade head
 | `SCHEDULER_ENABLED` | Enable autonomous APScheduler background jobs | `true` |
 | `SCRAPE_INTERVAL_MINUTES` | Frequency of job discovery cycles | `60` |
 | `MIN_MATCH_SCORE_NOTIFY` | Minimum STAIR match score (0-100) to trigger alerts | `70` |
+| `MAX_NOTIFY_ATTEMPTS` | Maximum retry attempts for failing push notifications | `5` |
 | `MAX_JOB_AGE_DAYS` | Freshness cutoff gate: discard jobs posted older than N days | `7` |
 | `DATA_RETENTION_DAYS` | Auto-cleanup retention period for jobs and applications | `60` |
 | `SEEN_RETENTION_DAYS` | Persistent deduplication history retention for seen jobs | `365` |

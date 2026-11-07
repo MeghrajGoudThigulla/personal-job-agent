@@ -70,3 +70,4 @@ def downgrade() -> None:
     op.drop_index("ix_seen_jobs_last_seen_at", table_name="seen_jobs")
     op.drop_index("ix_seen_jobs_fingerprint", table_name="seen_jobs")
     op.drop_table("seen_jobs")
+

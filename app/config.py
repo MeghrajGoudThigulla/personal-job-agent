@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     SCRAPE_INTERVAL_MINUTES: int = 60
     AUTO_TAILOR_HIGH_MATCH: bool = True
     MIN_MATCH_SCORE_NOTIFY: int = 70
+    MAX_NOTIFY_ATTEMPTS: int = int(os.getenv("MAX_NOTIFY_ATTEMPTS", "5"))
     MAX_JOB_AGE_DAYS: int = int(os.getenv("MAX_JOB_AGE_DAYS", "7"))
     DATA_RETENTION_DAYS: int = int(os.getenv("DATA_RETENTION_DAYS", "60"))
     SEEN_RETENTION_DAYS: int = int(os.getenv("SEEN_RETENTION_DAYS", "365"))

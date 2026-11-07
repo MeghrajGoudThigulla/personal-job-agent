@@ -180,3 +180,4 @@ async def test_company_with_percent_and_underscore_not_matching_others_in_db(tmp
         assert "A_B" in companies
 
     await test_engine.dispose()
+

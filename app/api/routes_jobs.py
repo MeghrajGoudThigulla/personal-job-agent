@@ -79,6 +79,25 @@ async def update_job_status(job_id: int, status: str, db: AsyncSession = Depends
     await db.commit()
     return {"success": True, "job_id": job_id, "new_status": status}
 
+@router.post("/{job_id}/retry")
+async def retry_job(job_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Resets notification attempts, backoff schedule, and tailoring status
+    so the job can be re-evaluated and re-notified/tailored.
+    """
+    result = await db.execute(select(JobPosting).where(JobPosting.id == job_id))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    job.notify_attempts = 0
+    job.next_attempt_at = None
+    job.last_error = None
+    job.tailor_status = "pending"
+    job.notified = False
+    await db.commit()
+    return {"success": True, "job_id": job_id, "status": "reset_for_retry"}
+
 @router.delete("/{job_id}")
 async def delete_job(job_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(JobPosting).where(JobPosting.id == job_id))

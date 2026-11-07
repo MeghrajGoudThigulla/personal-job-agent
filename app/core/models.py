@@ -31,6 +31,10 @@ class JobPosting(Base):
     status = Column(String(100), default="new", index=True) # new, reviewed, tailored, applied, rejected, archived
     notified = Column(Boolean, default=False, index=True)
     notified_at = Column(UTCDateTime, nullable=True)
+    notify_attempts = Column(Integer, default=0, nullable=False, index=True)
+    next_attempt_at = Column(UTCDateTime, nullable=True, index=True)
+    last_error = Column(String(500), nullable=True)
+    tailor_status = Column(String(20), default="pending", nullable=False, index=True)
 
     # Relationships
     application = relationship("TailoredApplication", back_populates="job", uselist=False, cascade="all, delete-orphan", lazy="selectin")
@@ -63,6 +67,11 @@ class JobPosting(Base):
             "notified": self.notified,
             "notified_at": self.notified_at.isoformat() if self.notified_at else None,
             "notified_at_ist": format_ist(self.notified_at) if self.notified_at else None,
+            "notify_attempts": self.notify_attempts or 0,
+            "next_attempt_at": self.next_attempt_at.isoformat() if self.next_attempt_at else None,
+            "next_attempt_at_ist": format_ist(self.next_attempt_at) if self.next_attempt_at else None,
+            "last_error": self.last_error,
+            "tailor_status": self.tailor_status or "pending",
             "has_tailored_application": has_app
         }
 

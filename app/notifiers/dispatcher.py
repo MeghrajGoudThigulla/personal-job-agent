@@ -19,6 +19,15 @@ class NotificationDispatcher:
         self.email = EmailNotifier()
         self.matcher = StairMatcher()
 
+    @property
+    def is_any_configured(self) -> bool:
+        return bool(
+            self.telegram.is_configured
+            or self.discord.is_configured
+            or self.slack.is_configured
+            or self.email.is_configured
+        )
+
     def is_india_eligible(self, job_data: Dict[str, Any]) -> bool:
         """Enforces candidate preference: strictly Indian jobs (work from office, hybrid, or remote from India)."""
         loc = job_data.get("location") or ""

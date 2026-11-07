@@ -198,14 +198,17 @@ class ScraperEngine:
         # DB-backed queue: Pick up unnotified high-match jobs ordered by score descending.
         # This processes up to 5 per cycle to prevent LLM rate limits (429) without starving any backlog.
         pending_jobs = []
-        notify_cutoff = utcnow() - timedelta(days=settings.MAX_JOB_AGE_DAYS)
+        now_phase2 = utcnow()
+        notify_cutoff = now_phase2 - timedelta(days=settings.MAX_JOB_AGE_DAYS)
         effective_dt = func.coalesce(JobPosting.posted_at, JobPosting.discovered_at)
         async with async_session_factory() as session:
             stmt = (
                 select(JobPosting)
                 .where(
-                    JobPosting.match_score >= settings.MIN_MATCH_SCORE_NOTIFY,
                     JobPosting.notified == False,
+                    JobPosting.match_score >= settings.MIN_MATCH_SCORE_NOTIFY,
+                    JobPosting.notify_attempts < settings.MAX_NOTIFY_ATTEMPTS,
+                    (JobPosting.next_attempt_at.is_(None)) | (JobPosting.next_attempt_at <= now_phase2),
                     effective_dt >= notify_cutoff
                 )
                 .order_by(JobPosting.match_score.desc(), JobPosting.discovered_at.desc())
@@ -226,29 +229,62 @@ class ScraperEngine:
                     "title": j.title,
                     "company": j.company,
                     "url": j.url,
-                    "description": j.description
+                    "description": j.description,
+                    "notify_attempts": j.notify_attempts or 0,
+                    "tailor_status": j.tailor_status or "pending",
                 })
 
+        has_notifier = self.notifier.is_any_configured
+        if not has_notifier:
+            logger.info("No notification channels configured; skipping push alert dispatch this cycle.")
+
         for hm in pending_jobs:
+            job_id = hm["job_id"]
             alert_payload = hm["job_dict"]
             alert_payload["matched_skills"] = hm["eval_res"].get("matched_skills", [])
 
             # 1. Fire Real-time Notification
-            notified = await self.notifier.dispatch_job_alert(alert_payload)
-            if notified:
+            if has_notifier:
+                now_attempt = utcnow()
                 try:
-                    async with async_session_factory() as session:
-                        j = await session.get(JobPosting, hm["job_id"])
-                        if j:
+                    notified = await self.notifier.dispatch_job_alert(alert_payload)
+                except Exception as notify_err:
+                    logger.error(f"Failed to dispatch notification for job {job_id}: {notify_err}")
+                    notified = False
+
+                async with async_session_factory() as session:
+                    j = await session.get(JobPosting, job_id)
+                    if j:
+                        if notified:
                             j.notified = True
-                            j.notified_at = utcnow()
-                            await session.commit()
+                            j.notified_at = now_attempt
+                            j.last_error = None
                             notified_count += 1
-                except Exception as ne:
-                    logger.error(f"Failed to update notification state for job {hm['job_id']}: {ne}")
+                        else:
+                            attempts = (j.notify_attempts or 0) + 1
+                            j.notify_attempts = attempts
+                            backoff_minutes = min(120, 5 * (2 ** (attempts - 1)))
+                            j.next_attempt_at = now_attempt + timedelta(minutes=backoff_minutes)
+                            j.last_error = "Notification failed across configured channels"[:500]
+                            if attempts >= settings.MAX_NOTIFY_ATTEMPTS:
+                                logger.warning(
+                                    f"Job {job_id} reached max notification attempts ({attempts}). Abandoning notification."
+                                )
+                                await log_audit_event(
+                                    "notification_abandoned",
+                                    {
+                                        "job_id": job_id,
+                                        "title": j.title,
+                                        "attempts": attempts,
+                                        "last_error": j.last_error
+                                    },
+                                    "warning"
+                                )
+                        await session.commit()
 
             # 2. Automated Resume Tailoring & Outreach Draft (LLM call runs outside DB transaction)
-            if settings.AUTO_TAILOR_HIGH_MATCH:
+            # Runs only when tailor_status == "pending", once per job
+            if settings.AUTO_TAILOR_HIGH_MATCH and hm["tailor_status"] == "pending":
                 try:
                     tailor_res = await self.tailor.tailor_resume(
                         job_title=hm["title"],
@@ -286,9 +322,15 @@ class ScraperEngine:
                         j = await session.get(JobPosting, hm["job_id"])
                         if j:
                             j.status = "tailored"
+                            j.tailor_status = "done"
                         await session.commit()
                 except Exception as tailor_e:
                     logger.error(f"Auto-tailor failed for job {hm['job_id']}: {tailor_e}")
+                    async with async_session_factory() as session:
+                        j = await session.get(JobPosting, hm["job_id"])
+                        if j:
+                            j.tailor_status = "failed"
+                        await session.commit()
 
             # Respectful pacing between external LLM calls
             await asyncio.sleep(2.0)
