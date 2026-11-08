@@ -66,7 +66,20 @@ class PDFCompiler:
         with open(tex_path, "w", encoding="utf-8") as f:
             f.write(latex_content)
 
-        # 2. Check for xelatex or pdflatex
+        # 2. Check if PDF compilation is enabled, then look for xelatex or pdflatex
+        if not settings.PDF_COMPILE_ENABLED:
+            logger.info("PDF_COMPILE_ENABLED is false; skipping LaTeX compilation and generating HTML fallback.")
+            self._generate_html_resume(latex_content, html_path, filename_base)
+            return {
+                "success": True,
+                "pdf_generated": False,
+                "artifact_type": "html",
+                "pdf_path": str(html_path),
+                "html_path": str(html_path),
+                "tex_path": str(tex_path),
+                "message": "LaTeX source and printable HTML resume generated (PDF compilation disabled on this environment).",
+            }
+
         compiler = shutil.which("xelatex") or shutil.which("pdflatex")
 
         if compiler:

@@ -2,6 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
+from sqlalchemy.orm import defer
 from app.core.database import get_db
 from app.core.models import JobPosting, TailoredApplication
 
@@ -18,7 +19,11 @@ async def get_jobs(
     offset: int = 0,
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(JobPosting).order_by(desc(JobPosting.match_score), desc(JobPosting.discovered_at))
+    query = (
+        select(JobPosting)
+        .options(defer(JobPosting.description))
+        .order_by(desc(JobPosting.match_score), desc(JobPosting.discovered_at))
+    )
 
     if status and status != "all":
         query = query.where(JobPosting.status == status)
@@ -43,7 +48,7 @@ async def get_jobs(
     result = await db.execute(query)
     jobs = result.scalars().all()
 
-    return [j.to_dict() for j in jobs]
+    return [j.to_dict(include_description=False) for j in jobs]
 
 @router.get("/stats")
 async def get_job_stats(db: AsyncSession = Depends(get_db)):

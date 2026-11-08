@@ -32,6 +32,12 @@ services:
         value: "365"
       - key: AUTO_TAILOR_HIGH_MATCH
         value: "true"
+      - key: PDF_COMPILE_ENABLED
+        value: "false"
+      - key: MALLOC_ARENA_MAX
+        value: "2"
+      - key: WEB_CONCURRENCY
+        value: "1"
       - key: LLM_PROVIDER
         value: auto
       - key: GROQ_API_KEY

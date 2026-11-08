@@ -61,6 +61,8 @@ class Settings(BaseSettings):
     DATA_RETENTION_DAYS: int = int(os.getenv("DATA_RETENTION_DAYS", "60"))
     SEEN_RETENTION_DAYS: int = int(os.getenv("SEEN_RETENTION_DAYS", "365"))
     AUTO_CLEANUP_ENABLED: bool = os.getenv("AUTO_CLEANUP_ENABLED", "true").lower() in ("true", "1")
+    PDF_COMPILE_ENABLED: bool = os.getenv("PDF_COMPILE_ENABLED", "true").lower() in ("true", "1", "yes")
+    JOBSPY_ENABLED: bool = os.getenv("JOBSPY_ENABLED", "true").lower() in ("true", "1", "yes")
 
     # LLM Configuration
     # Options: "auto" (Groq <-> NVIDIA NIM auto-failover), "groq", "nvidia"

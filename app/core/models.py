@@ -39,11 +39,11 @@ class JobPosting(Base):
     # Relationships
     application = relationship("TailoredApplication", back_populates="job", uselist=False, cascade="all, delete-orphan", lazy="selectin")
 
-    def to_dict(self):
+    def to_dict(self, include_description: bool = True):
         has_app = False
         if "application" in self.__dict__:
             has_app = self.__dict__["application"] is not None
-        return {
+        data = {
             "id": self.id,
             "title": self.title,
             "company": self.company,
@@ -53,7 +53,6 @@ class JobPosting(Base):
             "fingerprint": self.fingerprint,
             "url": self.url,
             "source_platform": self.source_platform,
-            "description": self.description,
             "posted_date": self.posted_date,
             "posted_at": self.posted_at.isoformat() if self.posted_at else None,
             "posted_at_ist": format_ist(self.posted_at) if self.posted_at else None,
@@ -74,6 +73,9 @@ class JobPosting(Base):
             "tailor_status": self.tailor_status or "pending",
             "has_tailored_application": has_app
         }
+        if include_description:
+            data["description"] = self.__dict__.get("description", getattr(self, "description", "")) or ""
+        return data
 
 class TailoredApplication(Base):
     __tablename__ = "tailored_applications"

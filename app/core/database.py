@@ -28,8 +28,9 @@ if "sqlite" in db_url:
 else:
     # Production PostgreSQL pool configuration
     engine_kwargs["pool_pre_ping"] = True
-    engine_kwargs["pool_size"] = 10
-    engine_kwargs["max_overflow"] = 20
+    engine_kwargs["pool_size"] = 2
+    engine_kwargs["max_overflow"] = 2
+    engine_kwargs["pool_recycle"] = 300
     # Required for transaction poolers like Supabase Supavisor / PgBouncer
     engine_kwargs["connect_args"] = {"statement_cache_size": 0}
 

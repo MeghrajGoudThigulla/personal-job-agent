@@ -8,20 +8,16 @@ FROM python:3.12-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PORT=8000 \
+    MALLOC_ARENA_MAX=2 \
+    WEB_CONCURRENCY=1 \
+    PDF_COMPILE_ENABLED=false
 
 WORKDIR /app
 
-# Install minimal OS dependencies and TeX Live XeLaTeX packages for PDF resume generation
+# Install minimal OS dependencies for healthchecks
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     curl \
-    texlive-xetex \
-    texlive-fonts-recommended \
-    texlive-latex-extra \
-    fonts-freefont-otf \
-    fonts-dejavu \
-    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -33,6 +29,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY app/ ./app/
 COPY data/ ./data/
 COPY migrations/ ./migrations/
+COPY scripts/ ./scripts/
 COPY alembic.ini .
 
 # Ensure output directory for compiled resumes exists

@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import desc, func, select
+from sqlalchemy.orm import defer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes_jobs import router as jobs_router
@@ -22,6 +23,7 @@ from app.core.clock import format_ist, to_ist, utcnow
 from app.core.database import async_session_factory, get_db, init_db
 from app.core.models import AppSetting, AuditLog, JobPosting, TailoredApplication
 from app.core.scheduler import get_scheduler_status, start_scheduler, stop_scheduler
+from app.core.system import get_process_memory_mb
 from app.core.security import (
     check_brute_force,
     constant_time_compare,
@@ -291,8 +293,12 @@ async def dashboard_view(
         "applied": applied
     }
 
-    # Query jobs
-    query = select(JobPosting).order_by(desc(JobPosting.match_score), desc(JobPosting.discovered_at))
+    # Query jobs (defer description to reduce memory overhead on list view)
+    query = (
+        select(JobPosting)
+        .options(defer(JobPosting.description))
+        .order_by(desc(JobPosting.match_score), desc(JobPosting.discovered_at))
+    )
     if status and status != "all":
         query = query.where(JobPosting.status == status)
     if tier and tier != "all":
@@ -321,7 +327,7 @@ async def dashboard_view(
         name="index.html",
         context={
             "stats": stats,
-            "jobs": [j.to_dict() for j in jobs],
+            "jobs": [j.to_dict(include_description=False) for j in jobs],
             "csrf_token": getattr(request.state, "csrf_token", ""),
         }
     )
@@ -440,5 +446,6 @@ async def health_detailed(request: Request):
         "scrape_interval_minutes": sched_info["interval_minutes"],
         "next_scrape_at": sched_info["next_scrape_at"],
         "next_cleanup_at": sched_info.get("next_cleanup_at"),
-        "retention_days": sched_info.get("retention_days")
+        "retention_days": sched_info.get("retention_days"),
+        "memory_rss_mb": get_process_memory_mb(),
     }

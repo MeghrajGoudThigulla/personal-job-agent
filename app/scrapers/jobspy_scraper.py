@@ -1,62 +1,68 @@
 import asyncio
+import json
 import logging
-from typing import List, Dict, Any
+import sys
+from typing import Any, Dict, List
+from app.config import settings
 from app.scrapers.base import BaseScraper
 
 logger = logging.getLogger("personal_job_agent.scraper.jobspy")
 
 class JobSpyScraper(BaseScraper):
     """
-    Scrapes LinkedIn, Indeed, and Glassdoor using python-jobspy.
-    Targeted for Software Engineer, AI Engineer, and Backend roles in India / Remote.
+    Scrapes Indeed using python-jobspy inside a short-lived subprocess.
+    Ensures pandas, numpy, and curl_cffi memory is immediately reclaimed by the OS.
     """
 
     def __init__(self):
         super().__init__("JobSpyScraper")
 
     async def scrape(self) -> List[Dict[str, Any]]:
-        jobs = []
+        if not settings.JOBSPY_ENABLED:
+            logger.info("JobSpy scraping is disabled via JOBSPY_ENABLED=false. Skipping.")
+            return []
+
+        script_path = settings.BASE_DIR / "scripts" / "run_jobspy.py"
+        if not script_path.exists():
+            logger.warning(f"JobSpy runner script not found at {script_path}. Skipping.")
+            return []
+
+        cmd = [
+            sys.executable,
+            str(script_path),
+            "--results-wanted", "5",
+            "--location", "India",
+        ]
+
+        logger.info("Executing JobSpy scraper in a short-lived subprocess...")
         try:
-            from jobspy import scrape_jobs
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120.0)
 
-            search_terms = [
-                "Python Backend Developer",
-                "FastAPI Developer",
-                "Python Developer 1-2 years",
-                "Full Stack Python React",
-                ".NET Developer 1-2 years",
-                "Flutter Developer",
-                "Junior Software Engineer Python"
-            ]
-            for term in search_terms:
-                try:
-                    df = await asyncio.to_thread(
-                        scrape_jobs,
-                        site_name=["indeed"], # Indeed works cleanly from datacenter IPs without proxy
-                        search_term=term,
-                        location="India",
-                        results_wanted=15,
-                        hours_old=72,
-                        country_indeed="india"
-                    )
-                    if df is not None and not df.empty:
-                        for _, row in df.iterrows():
-                            jobs.append({
-                                "title": str(row.get("title", "")),
-                                "company": str(row.get("company", "")),
-                                "location": str(row.get("location", "India")),
-                                "remote_status": "Remote" if row.get("is_remote") else "Hybrid/Onsite",
-                                "url": str(row.get("job_url", "")),
-                                "source_platform": str(row.get("site", "JobSpy")),
-                                "description": str(row.get("description", ""))[:3000],
-                                "posted_date": str(row.get("date_posted", ""))
-                            })
-                except Exception as inner_e:
-                    logger.debug(f"JobSpy scrape search error for {term}: {inner_e}")
-        except ImportError:
-            logger.warning("python-jobspy not available. Skipping multi-board scrape.")
+            if proc.returncode != 0:
+                err_msg = stderr.decode("utf-8", errors="replace").strip()
+                logger.warning(f"JobSpy subprocess exited with code {proc.returncode}: {err_msg[:300]}")
+                return []
+
+            output_str = stdout.decode("utf-8", errors="replace").strip()
+            if not output_str:
+                return []
+
+            jobs = json.loads(output_str)
+            logger.info(f"JobSpyScraper extracted {len(jobs)} jobs via isolated subprocess.")
+            return jobs
+        except asyncio.TimeoutError:
+            logger.warning("JobSpy subprocess timed out after 120s; terminating process.")
+            try:
+                proc.kill()
+                await proc.wait()
+            except Exception:
+                pass
+            return []
         except Exception as e:
-            logger.error(f"JobSpy scraper error: {e}")
-
-        logger.info(f"JobSpyScraper extracted {len(jobs)} jobs.")
-        return jobs
+            logger.error(f"Failed to execute JobSpy subprocess: {e}")
+            return []
