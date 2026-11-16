@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import JSONResponse
@@ -8,8 +9,11 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.orm import defer
 from app.core.database import get_db
 from app.core.models import JobPosting, TailoredApplication
+from app.intelligence.cover_letter import CoverLetterGenerator
+from app.intelligence.interview_prep import InterviewPrepGenerator
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
+
 
 @router.get("")
 async def get_jobs(
@@ -126,6 +130,55 @@ async def get_job(job_id: int, db: AsyncSession = Depends(get_db)):
     app_record = app_res.scalar_one_or_none()
     data["tailored_application"] = app_record.to_dict() if app_record else None
     return data
+
+@router.get("/{job_id}/prep-pack")
+async def get_job_prep_pack(job_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(JobPosting).where(JobPosting.id == job_id))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    matched_skills = []
+    if job.match_reason:
+        try:
+            m_data = json.loads(job.match_reason) if isinstance(job.match_reason, str) else job.match_reason
+            matched_skills = m_data.get("matched_skills", [])
+        except Exception:
+            pass
+
+    prep_generator = InterviewPrepGenerator()
+    prep_pack = await prep_generator.generate(
+        job_title=job.title,
+        company=job.company,
+        description=job.description or "",
+        matched_skills=matched_skills
+    )
+    return prep_pack
+
+@router.get("/{job_id}/cover-letter")
+async def get_job_cover_letter(job_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(JobPosting).where(JobPosting.id == job_id))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    matched_skills = []
+    if job.match_reason:
+        try:
+            m_data = json.loads(job.match_reason) if isinstance(job.match_reason, str) else job.match_reason
+            matched_skills = m_data.get("matched_skills", [])
+        except Exception:
+            pass
+
+    generator = CoverLetterGenerator()
+    letter_text = await generator.generate(
+        job_title=job.title,
+        company=job.company,
+        description=job.description or "",
+        matched_skills=matched_skills
+    )
+    return {"job_id": job.id, "company": job.company, "title": job.title, "cover_letter": letter_text}
+
 
 @router.patch("/{job_id}/status")
 async def update_job_status(job_id: int, status: str, db: AsyncSession = Depends(get_db)):

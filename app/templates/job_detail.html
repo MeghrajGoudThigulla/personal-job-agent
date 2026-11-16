@@ -103,10 +103,16 @@
     </div>
 </div>
 
-<!-- Tabs: Tailored Resume vs Cold Outreach vs Description -->
-<div class="border-b border-slate-800 mb-6 flex space-x-6 text-sm font-semibold">
+<!-- Tabs: Tailored Resume vs Cold Outreach vs Description vs Interview Prep vs Cover Letter -->
+<div class="border-b border-slate-800 mb-6 flex space-x-6 text-sm font-semibold overflow-x-auto">
     <button onclick="switchTab('resume')" id="tab-btn-resume" class="pb-3 border-b-2 border-blue-500 text-blue-400">
         <i class="fa-solid fa-file-lines mr-1.5"></i> Tailored Resume (LaTeX / PDF)
+    </button>
+    <button onclick="switchTab('coverletter')" id="tab-btn-coverletter" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-file-signature mr-1.5"></i> Cover Letter (Text)
+    </button>
+    <button onclick="switchTab('prep')" id="tab-btn-prep" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-graduation-cap mr-1.5"></i> Interview Prep Pack
     </button>
     <button onclick="switchTab('outreach')" id="tab-btn-outreach" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
         <i class="fa-solid fa-envelope-open-text mr-1.5"></i> Cold Emails & 4MM
@@ -115,6 +121,7 @@
         <i class="fa-solid fa-align-left mr-1.5"></i> Original Job Description
     </button>
 </div>
+
 
 <!-- TAB 1: TAILORED RESUME -->
 <div id="tab-content-resume" class="space-y-4">
@@ -247,20 +254,147 @@
     </div>
 </div>
 
+<!-- TAB 4: TEXT COVER LETTER -->
+<div id="tab-content-coverletter" class="space-y-4 hidden">
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+            <div>
+                <h3 class="text-sm font-bold text-white flex items-center">
+                    <i class="fa-solid fa-file-signature text-blue-400 mr-2"></i> Anti-Slop Text Cover Letter
+                </h3>
+                <span class="text-xs text-slate-400">&lt; 200 words, metric-dense, formatted for Telegram & job portal quick copy-paste</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="loadCoverLetter(true)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
+                    <i class="fa-solid fa-rotate mr-1"></i> Refresh
+                </button>
+                <button onclick="copyToClipboard('text-cover-letter')" class="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-xs text-white font-medium shadow-sm">
+                    <i class="fa-solid fa-copy mr-1"></i> Copy Text
+                </button>
+            </div>
+        </div>
+        <div id="cover-letter-loading" class="text-center py-8 text-xs text-slate-400 hidden">
+            <i class="fa-solid fa-spinner fa-spin text-lg text-blue-400 mb-2 block"></i> Generating concise, anti-slop cover letter...
+        </div>
+        <pre id="text-cover-letter" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 whitespace-pre-wrap font-mono border border-slate-800/80 leading-relaxed">Loading cover letter...</pre>
+    </div>
+</div>
+
+<!-- TAB 5: INTERVIEW PREP PACK -->
+<div id="tab-content-prep" class="space-y-4 hidden">
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+            <div>
+                <h3 class="text-sm font-bold text-white flex items-center">
+                    <i class="fa-solid fa-graduation-cap text-cyan-400 mr-2"></i> Structured Interview Preparation Pack
+                </h3>
+                <span class="text-xs text-slate-400">Technical deep-dives, STAR behavioral outlines, and reverse interviewer questions</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="loadInterviewPrep(true)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
+                    <i class="fa-solid fa-rotate mr-1"></i> Refresh
+                </button>
+                <button onclick="copyToClipboard('interview-prep-markdown')" class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-xs text-white font-medium shadow-sm">
+                    <i class="fa-solid fa-copy mr-1"></i> Copy Markdown
+                </button>
+            </div>
+        </div>
+        <div id="interview-prep-loading" class="text-center py-8 text-xs text-slate-400 hidden">
+            <i class="fa-solid fa-spinner fa-spin text-lg text-cyan-400 mb-2 block"></i> Formulating technical talking points and STAR answers...
+        </div>
+        <div id="interview-prep-display" class="space-y-4">
+            <pre id="interview-prep-markdown" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 whitespace-pre-wrap font-mono border border-slate-800/80 leading-relaxed">Loading prep pack...</pre>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
     const CURRENT_JOB_ID = "{{ job.id }}";
+    let coverLetterLoaded = false;
+    let interviewPrepLoaded = false;
 
     function switchTab(tab) {
         document.getElementById('tab-content-resume').classList.add('hidden');
+        document.getElementById('tab-content-coverletter').classList.add('hidden');
+        document.getElementById('tab-content-prep').classList.add('hidden');
         document.getElementById('tab-content-outreach').classList.add('hidden');
         document.getElementById('tab-content-desc').classList.add('hidden');
 
         document.getElementById('tab-btn-resume').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+        document.getElementById('tab-btn-coverletter').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+        document.getElementById('tab-btn-prep').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
         document.getElementById('tab-btn-outreach').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
         document.getElementById('tab-btn-desc').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+
+        if (tab === 'resume') {
+            document.getElementById('tab-content-resume').classList.remove('hidden');
+            document.getElementById('tab-btn-resume').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+        } else if (tab === 'coverletter') {
+            document.getElementById('tab-content-coverletter').classList.remove('hidden');
+            document.getElementById('tab-btn-coverletter').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+            if (!coverLetterLoaded) loadCoverLetter();
+        } else if (tab === 'prep') {
+            document.getElementById('tab-content-prep').classList.remove('hidden');
+            document.getElementById('tab-btn-prep').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+            if (!interviewPrepLoaded) loadInterviewPrep();
+        } else if (tab === 'outreach') {
+            document.getElementById('tab-content-outreach').classList.remove('hidden');
+            document.getElementById('tab-btn-outreach').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+        } else if (tab === 'desc') {
+            document.getElementById('tab-content-desc').classList.remove('hidden');
+            document.getElementById('tab-btn-desc').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+        }
+    }
+
+    async function loadCoverLetter(force = false) {
+        const textEl = document.getElementById('text-cover-letter');
+        const loader = document.getElementById('cover-letter-loading');
+        if (loader) loader.classList.remove('hidden');
+        if (textEl) textEl.classList.add('hidden');
+
+        try {
+            const res = await fetch(`/api/jobs/${CURRENT_JOB_ID}/cover-letter`);
+            if (res.ok) {
+                const data = await res.json();
+                if (textEl) textEl.innerText = data.cover_letter || 'No cover letter returned.';
+                coverLetterLoaded = true;
+            } else {
+                if (textEl) textEl.innerText = 'Failed to load cover letter.';
+            }
+        } catch (e) {
+            if (textEl) textEl.innerText = 'Error loading cover letter: ' + e;
+        } finally {
+            if (loader) loader.classList.add('hidden');
+            if (textEl) textEl.classList.remove('hidden');
+        }
+    }
+
+    async function loadInterviewPrep(force = false) {
+        const textEl = document.getElementById('interview-prep-markdown');
+        const loader = document.getElementById('interview-prep-loading');
+        if (loader) loader.classList.remove('hidden');
+        if (textEl) textEl.classList.add('hidden');
+
+        try {
+            const res = await fetch(`/api/jobs/${CURRENT_JOB_ID}/prep-pack`);
+            if (res.ok) {
+                const data = await res.json();
+                if (textEl) textEl.innerText = data.markdown || 'No prep pack returned.';
+                interviewPrepLoaded = true;
+            } else {
+                if (textEl) textEl.innerText = 'Failed to load interview prep pack.';
+            }
+        } catch (e) {
+            if (textEl) textEl.innerText = 'Error loading interview prep pack: ' + e;
+        } finally {
+            if (loader) loader.classList.add('hidden');
+            if (textEl) textEl.classList.remove('hidden');
+        }
+    }
+
 
         if (tab === 'resume') {
             document.getElementById('tab-content-resume').classList.remove('hidden');
