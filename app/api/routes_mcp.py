@@ -98,6 +98,18 @@ MCP_TOOLS_DEFINITIONS: List[Dict[str, Any]] = [
             "required": ["job_id"]
         }
     },
+    {
+        "name": "benchmark_salary",
+        "description": "Extract stated salary and estimate market compensation bands (INR Lakhs / USD) for a job posting.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "job_id": {"type": "integer", "description": "The unique integer ID of the job posting."}
+            },
+            "required": ["job_id"]
+        }
+    },
+
 
     {
         "name": "update_application_stage",
@@ -353,6 +365,25 @@ async def _execute_tool(tool_name: str, args: Dict[str, Any], db: AsyncSession) 
             description=job.description or ""
         )
         return json.dumps(research, indent=2)
+
+    elif tool_name == "benchmark_salary":
+        job_id = int(args.get("job_id", 0))
+        stmt = select(JobPosting).where(JobPosting.id == job_id)
+        res = await db.execute(stmt)
+        job = res.scalar_one_or_none()
+        if not job:
+            return f"Job with id {job_id} not found."
+
+        from app.intelligence.salary_benchmarks import SalaryBenchmarker
+        benchmarker = SalaryBenchmarker()
+        bench = benchmarker.benchmark(
+            job_title=job.title,
+            company=job.company,
+            location=job.location or "",
+            description=job.description or ""
+        )
+        return json.dumps(bench, indent=2)
+
 
 
     elif tool_name == "update_application_stage":
