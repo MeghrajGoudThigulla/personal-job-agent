@@ -20,7 +20,9 @@ from app.api.routes_tailor import router as tailor_router
 from app.api.routes_trace import router as trace_router
 from app.api.routes_email import router as email_router
 from app.api.routes_tracker import router as tracker_router
+from app.api.routes_analytics import router as analytics_router
 from app.config import settings
+
 from app.core.clock import format_ist, to_ist, utcnow
 from app.core.database import async_session_factory, get_db, init_db
 from app.core.models import AppSetting, AuditLog, JobPosting, TailoredApplication
@@ -88,6 +90,8 @@ app.include_router(settings_router)
 app.include_router(trace_router)
 app.include_router(email_router)
 app.include_router(tracker_router)
+app.include_router(analytics_router)
+
 
 # Mount static files if present
 static_dir = Path(__file__).resolve().parent / "static"
