@@ -132,6 +132,16 @@ MCP_TOOLS_DEFINITIONS: List[Dict[str, Any]] = [
             "type": "object",
             "properties": {}
         }
+    },
+    {
+        "name": "summarize_recruitment_emails",
+        "description": "Reads recent candidate correspondence from connected Gmail & Outlook inboxes and generates an AI executive summary of all interviews, assessments, and application decisions.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "description": "Number of recent emails to analyze (default 15)."}
+            }
+        }
     }
 ]
 
@@ -413,6 +423,13 @@ async def _execute_tool(tool_name: str, args: Dict[str, Any], db: AsyncSession) 
     elif tool_name == "get_pipeline_analytics":
         funnel_data = await get_analytics_funnel(db)
         return json.dumps(funnel_data, indent=2)
+
+    elif tool_name == "summarize_recruitment_emails":
+        limit = int(args.get("limit", 15))
+        from app.email_monitor.inbox_scanner import InboxScanner
+        scanner = InboxScanner()
+        res = await scanner.get_recent_emails_summary(limit=limit)
+        return json.dumps(res, indent=2)
 
     else:
         raise ValueError(f"Unknown tool name: {tool_name}")

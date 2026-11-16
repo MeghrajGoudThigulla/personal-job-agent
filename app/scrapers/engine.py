@@ -299,47 +299,8 @@ class ScraperEngine:
                 except Exception as cl_err:
                     logger.debug(f"Cover letter generation error for job {job_id}: {cl_err}")
 
-                # 1. Fire Real-time Notification
-                if has_notifier:
-                    now_attempt = utcnow()
-                    try:
-                        notified = await self.notifier.dispatch_job_alert(alert_payload)
-                    except Exception as notify_err:
-                        logger.error(f"Failed to dispatch notification for job {job_id}: {notify_err}")
-                        notified = False
-
-                    async with async_session_factory() as session:
-                        j = await session.get(JobPosting, job_id)
-                        if j:
-                            if notified:
-                                j.notified = True
-                                j.notified_at = now_attempt
-                                j.last_error = None
-                                notified_count += 1
-                            else:
-                                attempts = (j.notify_attempts or 0) + 1
-                                j.notify_attempts = attempts
-                                backoff_minutes = min(120, 5 * (2 ** (attempts - 1)))
-                                j.next_attempt_at = now_attempt + timedelta(minutes=backoff_minutes)
-                                j.last_error = "Notification failed across configured channels"[:500]
-                                if attempts >= settings.MAX_NOTIFY_ATTEMPTS:
-                                    logger.warning(
-                                        f"Job {job_id} reached max notification attempts ({attempts}). Abandoning notification."
-                                    )
-                                    await log_audit_event(
-                                        "notification_abandoned",
-                                        {
-                                            "job_id": job_id,
-                                            "title": j.title,
-                                            "attempts": attempts,
-                                            "last_error": j.last_error
-                                        },
-                                        "warning"
-                                    )
-                            await session.commit()
-
-                # 2. Automated Resume Tailoring & Outreach Draft (LLM call runs outside DB transaction)
-                # Runs only when tailor_status == "pending", once per job
+                # 1. Automated Resume Tailoring & Outreach Draft (LLM call runs outside DB transaction)
+                # Tailor before notification so tailored LaTeX resume can be delivered sequentially
                 if settings.AUTO_TAILOR_HIGH_MATCH and hm["tailor_status"] == "pending":
                     try:
                         tailor_res = await self.tailor.tailor_resume(
@@ -380,12 +341,64 @@ class ScraperEngine:
                                 j.status = "tailored"
                                 j.tailor_status = "done"
                             await session.commit()
+
+                        alert_payload["tailored_tex"] = tailor_res["tailored_tex"]
                     except Exception as tailor_e:
                         logger.error(f"Auto-tailor failed for job {hm['job_id']}: {tailor_e}")
                         async with async_session_factory() as session:
                             j = await session.get(JobPosting, hm["job_id"])
                             if j:
                                 j.tailor_status = "failed"
+                            await session.commit()
+                elif hm["tailor_status"] == "done":
+                    async with async_session_factory() as session:
+                        res = await session.execute(
+                            select(TailoredApplication.tailored_resume_tex)
+                            .where(TailoredApplication.job_id == hm["job_id"])
+                            .order_by(TailoredApplication.created_at.desc())
+                            .limit(1)
+                        )
+                        existing_tex = res.scalar_one_or_none()
+                        if existing_tex:
+                            alert_payload["tailored_tex"] = existing_tex
+
+                # 2. Fire Real-time Notification (Job Alert -> Cover Letter -> Tailored LaTeX Code)
+                if has_notifier:
+                    now_attempt = utcnow()
+                    try:
+                        notified = await self.notifier.dispatch_job_alert(alert_payload)
+                    except Exception as notify_err:
+                        logger.error(f"Failed to dispatch notification for job {job_id}: {notify_err}")
+                        notified = False
+
+                    async with async_session_factory() as session:
+                        j = await session.get(JobPosting, job_id)
+                        if j:
+                            if notified:
+                                j.notified = True
+                                j.notified_at = now_attempt
+                                j.last_error = None
+                                notified_count += 1
+                            else:
+                                attempts = (j.notify_attempts or 0) + 1
+                                j.notify_attempts = attempts
+                                backoff_minutes = min(120, 5 * (2 ** (attempts - 1)))
+                                j.next_attempt_at = now_attempt + timedelta(minutes=backoff_minutes)
+                                j.last_error = "Notification failed across configured channels"[:500]
+                                if attempts >= settings.MAX_NOTIFY_ATTEMPTS:
+                                    logger.warning(
+                                        f"Job {job_id} reached max notification attempts ({attempts}). Abandoning notification."
+                                    )
+                                    await log_audit_event(
+                                        "notification_abandoned",
+                                        {
+                                            "job_id": job_id,
+                                            "title": j.title,
+                                            "attempts": attempts,
+                                            "last_error": j.last_error
+                                        },
+                                        "warning"
+                                    )
                             await session.commit()
 
                 # Respectful pacing between external LLM calls

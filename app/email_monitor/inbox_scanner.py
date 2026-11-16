@@ -1,7 +1,8 @@
 """
-Inbox Scanner: Gmail & Outlook IMAP client.
+Inbox Scanner: Gmail & Outlook IMAP client with AI Summarization.
 Connects via IMAP SSL with App Passwords, scans for hiring updates,
-classifies emails, and triggers immediate Telegram notifications.
+reads and summarizes emails using AI, and triggers immediate Telegram notifications
+plus aggregated recruitment pipeline digests.
 """
 
 from __future__ import annotations
@@ -13,12 +14,13 @@ import imaplib
 import logging
 import re
 from typing import Any, Dict, List, Optional
-from sqlalchemy import select
+from sqlalchemy import desc, select
 
 from app.config import settings
 from app.core.database import async_session_factory
 from app.core.models import SeenEmail
 from app.email_monitor.summarizer import EmailSummarizer
+from app.intelligence.llm_client import UnifiedLLMClient
 from app.notifiers.telegram import TelegramNotifier
 
 logger = logging.getLogger("personal_job_agent.email_monitor")
@@ -48,8 +50,11 @@ def extract_body(msg: email.message.Message) -> str:
         for part in msg.walk():
             content_type = part.get_content_type()
             content_disposition = str(part.get("Content-Disposition", ""))
+
+            # Skip attachments
             if "attachment" in content_disposition:
                 continue
+
             if content_type == "text/plain":
                 payload = part.get_payload(decode=True)
                 if payload:
@@ -59,8 +64,8 @@ def extract_body(msg: email.message.Message) -> str:
                 payload = part.get_payload(decode=True)
                 if payload:
                     charset = part.get_content_charset() or "utf-8"
-                    html_content = payload.decode(charset, errors="replace")
-                    body_text = re.sub(r"<[^>]+>", " ", html_content)
+                    raw_html = payload.decode(charset, errors="replace")
+                    body_text = re.sub(r"<[^>]+>", " ", raw_html)
     else:
         content_type = msg.get_content_type()
         payload = msg.get_payload(decode=True)
@@ -76,11 +81,16 @@ def extract_body(msg: email.message.Message) -> str:
 
 class InboxScanner:
     """
-    Connects to Gmail & Outlook to read and alert on recruitment emails.
+    Connects to Gmail & Outlook to read, categorize, and AI-summarize recruitment emails.
     """
 
-    def __init__(self, notifier: Optional[TelegramNotifier] = None):
+    def __init__(
+        self,
+        notifier: Optional[TelegramNotifier] = None,
+        llm_client: Optional[UnifiedLLMClient] = None,
+    ):
         self.notifier = notifier or TelegramNotifier()
+        self.llm = llm_client or UnifiedLLMClient()
 
     def _scan_imap_sync(
         self,
@@ -161,8 +171,8 @@ class InboxScanner:
 
     async def scan_all_accounts(self) -> Dict[str, Any]:
         """
-        Scans both Gmail and Outlook, checks SeenEmail table,
-        and fires immediate Telegram alerts for newly discovered hiring emails.
+        Scans both Gmail and Outlook, reads and AI-summarizes hiring emails,
+        records them in SeenEmail, and fires individual + batch Telegram alerts.
         """
         # 1. Fetch already seen message IDs from DB
         seen_ids = set()
@@ -198,7 +208,7 @@ class InboxScanner:
             )
             new_emails.extend(outlook_found)
 
-        # 4. Notify and save to DB
+        # 4. Read & summarize each email with AI, notify, and record in DB
         notified_count = 0
         async with async_session_factory() as session:
             for item in new_emails:
@@ -210,7 +220,17 @@ class InboxScanner:
                 sender = item["sender"]
                 subject = item["subject"]
                 date_str = item["date"]
+                body = item.get("body", "")
                 classification = item["classification"]
+
+                # Generate AI Executive Summary for this email
+                ai_summary = await EmailSummarizer.summarize_email(
+                    subject=subject,
+                    body=body,
+                    sender=sender,
+                    llm_client=self.llm,
+                )
+                classification["summary"] = ai_summary
 
                 # Fire Telegram alert immediately
                 if self.notifier.is_configured:
@@ -220,6 +240,7 @@ class InboxScanner:
                         subject=subject,
                         date_str=date_str,
                         classification=classification,
+                        summary_text=ai_summary,
                     )
                     sent = await self.notifier.send_message(alert_text)
                     if sent:
@@ -237,6 +258,18 @@ class InboxScanner:
 
             await session.commit()
 
+        # 5. If multiple new emails arrived in this cycle, send an aggregated batch briefing
+        if len(new_emails) > 1 and self.notifier.is_configured:
+            batch_summary = await EmailSummarizer.summarize_inbox_batch(
+                emails=new_emails,
+                llm_client=self.llm,
+            )
+            digest_text = EmailSummarizer.format_inbox_digest(
+                emails=new_emails,
+                batch_summary=batch_summary,
+            )
+            await self.notifier.send_message(digest_text, parse_mode="Markdown")
+
         summary = {
             "status": "success",
             "scanned_accounts": [
@@ -250,3 +283,43 @@ class InboxScanner:
         }
         logger.info(f"Email scan finished: {summary}")
         return summary
+
+    async def get_recent_emails_summary(self, limit: int = 15) -> Dict[str, Any]:
+        """
+        Reads recently processed candidate emails and generates an aggregated AI summary
+        of current inbox status and hiring correspondence.
+        """
+        async with async_session_factory() as session:
+            res = await session.execute(
+                select(SeenEmail).order_by(desc(SeenEmail.notified_at)).limit(limit)
+            )
+            records = res.scalars().all()
+
+        if not records:
+            return {
+                "total_tracked": 0,
+                "summary": "No recruitment emails have been tracked yet.",
+                "categories": {},
+                "recent_emails": [],
+            }
+
+        categories: Dict[str, int] = {}
+        email_items = []
+        for r in records:
+            cat = r.category or "STATUS_UPDATE"
+            categories[cat] = categories.get(cat, 0) + 1
+            email_items.append({
+                "account": r.account,
+                "subject": r.subject,
+                "classification": {"category": cat},
+                "notified_at": r.notified_at.isoformat() if r.notified_at else "",
+            })
+
+        batch_summary = await EmailSummarizer.summarize_inbox_batch(email_items, self.llm)
+
+        return {
+            "total_tracked": len(records),
+            "categories": categories,
+            "executive_summary": batch_summary,
+            "recent_emails": [r.to_dict() for r in records],
+        }

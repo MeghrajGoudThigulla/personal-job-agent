@@ -63,11 +63,60 @@ def test_format_telegram_alert():
         subject="Google Interview",
         date_str="2026-11-16",
         classification=classification,
+        summary_text="• Invited to technical interview at Google.\n• Action: Pick time slot within 48 hours.",
     )
     assert "INTERVIEW INVITATION" in alert
     assert "Gmail" in alert
     assert "recruiting@google.com" in alert
     assert "https://meet.google.com/xyz-123" in alert
+    assert "AI Executive Summary" in alert
+    assert "Google" in alert
+
+
+@pytest.mark.asyncio
+async def test_summarize_email_individual():
+    subject = "Interview Invitation: Senior Python Engineer at Uber"
+    body = (
+        "Hi Meghraj, we would love to invite you to a 45-minute technical round.\n"
+        "Please schedule your interview by Friday, November 20."
+    )
+    summary = await EmailSummarizer.summarize_email(
+        subject=subject,
+        body=body,
+        sender="recruiter@uber.com",
+    )
+    assert "Uber" in summary
+    assert "Status / Event" in summary or "Entity" in summary
+    assert "Action Required" in summary
+
+
+@pytest.mark.asyncio
+async def test_summarize_inbox_batch_and_digest():
+    emails = [
+        {
+            "sender": "recruiter@uber.com",
+            "subject": "Interview Invitation at Uber",
+            "classification": {"category": "INTERVIEW_INVITE", "urgency": "HIGH"},
+        },
+        {
+            "sender": "jobs@razorpay.com",
+            "subject": "Job Offer from Razorpay",
+            "classification": {"category": "OFFER", "urgency": "HIGH"},
+        },
+        {
+            "sender": "talent@stripe.com",
+            "subject": "Status of your application at Stripe",
+            "classification": {"category": "REJECTION", "urgency": "NORMAL"},
+        },
+    ]
+    batch_summary = await EmailSummarizer.summarize_inbox_batch(emails)
+    assert "Recruitment Pipeline Activity" in batch_summary or "Overview" in batch_summary
+    assert "Urgent" in batch_summary
+
+    digest_text = EmailSummarizer.format_inbox_digest(emails, batch_summary)
+    assert "RECRUITMENT INBOX DIGEST" in digest_text
+    assert "3 Updates Received" in digest_text
+    assert "Interview Invitation at Uber" in digest_text
 
 
 @pytest.mark.asyncio
@@ -117,6 +166,7 @@ async def test_inbox_scanner_deduplication_and_alerting(tmp_path, monkeypatch):
     assert summary1["notified_count"] == 1
     assert len(sent_messages) == 1
     assert "Amazon" in sent_messages[0]
+    assert "AI Executive Summary" in sent_messages[0]
 
     # Verify SeenEmail persisted in DB
     async with test_session_factory() as session:
@@ -130,3 +180,10 @@ async def test_inbox_scanner_deduplication_and_alerting(tmp_path, monkeypatch):
     assert summary2["new_emails_found"] == 0
     assert summary2["notified_count"] == 0
     assert len(sent_messages) == 1
+
+    # Test get_recent_emails_summary
+    recent_summary = await scanner.get_recent_emails_summary(limit=10)
+    assert recent_summary["total_tracked"] == 1
+    assert "Amazon" in recent_summary["executive_summary"] or "Activity" in recent_summary["executive_summary"]
+
+    await test_engine.dispose()

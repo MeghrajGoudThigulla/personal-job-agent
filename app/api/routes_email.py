@@ -32,3 +32,10 @@ async def get_recent_email_alerts():
         )
         records = res.scalars().all()
         return [r.to_dict() for r in records]
+
+
+@router.get("/summary")
+async def get_email_inbox_summary(limit: int = 15):
+    """Returns an AI-generated executive summary of all recent candidate recruitment emails."""
+    res = await scanner.get_recent_emails_summary(limit=limit)
+    return res
