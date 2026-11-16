@@ -17,6 +17,7 @@ from app.intelligence.resume_tailor import ResumeTailor
 from app.intelligence.outreach_generator import OutreachGenerator
 from app.intelligence.pdf_compiler import PDFCompiler
 from app.intelligence.liveness import posting_is_closed
+from app.intelligence.posting_guard import PostingGuard
 from app.notifiers.dispatcher import NotificationDispatcher
 from app.scrapers.base import parse_posted_date
 from app.scrapers.direct_ats import DirectATSScraper
@@ -41,6 +42,7 @@ class ScraperEngine:
         self.outreach = OutreachGenerator()
         self.pdf_compiler = PDFCompiler()
         self.notifier = NotificationDispatcher()
+        self.guard = PostingGuard()
         self._cycle_lock = cycle_lock or ScraperEngine._shared_cycle_lock
 
         # Initialize scrapers
@@ -103,10 +105,17 @@ class ScraperEngine:
                         if not url or url in batch_urls:
                             continue
 
-                        # Truncate descriptions to ~8,000 characters at ingest
+                        # Prompt injection defense and cleaning at ingest
                         raw_desc = item.get("description") or ""
-                        if len(raw_desc) > 8000:
-                            raw_desc = raw_desc[:8000]
+                        guard_report = self.guard.clean(raw_desc)
+                        clean_desc = guard_report["cleaned_text"]
+                        if guard_report["risk_level"] == "high":
+                            logger.warning(
+                                f"High-risk prompt injection flags detected for '{item.get('title')}': "
+                                f"{guard_report['flags']}"
+                            )
+                        if len(clean_desc) > 8000:
+                            clean_desc = clean_desc[:8000]
 
                         url_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()
 
@@ -165,7 +174,7 @@ class ScraperEngine:
                             title=item.get("title", ""),
                             company=item.get("company", ""),
                             location=item.get("location", ""),
-                            description=raw_desc
+                            description=clean_desc
                         )
 
                         score = eval_res["score"]
@@ -181,7 +190,7 @@ class ScraperEngine:
                             fingerprint=fp,
                             url=url[:1000],
                             source_platform=item.get("source_platform", "Web")[:100],
-                            description=raw_desc,
+                            description=clean_desc,
                             posted_date=str(item.get("posted_date", "") or "")[:100],
                             posted_at=posted_at,
                             posted_date_unverified=posted_date_unverified,
