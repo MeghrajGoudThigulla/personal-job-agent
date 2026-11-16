@@ -1,5 +1,8 @@
+import csv
+import io
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import defer
@@ -65,6 +68,51 @@ async def get_job_stats(db: AsyncSession = Depends(get_db)):
         "applied": applied or 0,
         "notified": notified or 0
     }
+
+@router.get("/export/csv")
+async def export_jobs_csv(db: AsyncSession = Depends(get_db)):
+    """Exports all discovered jobs as a CSV file."""
+    stmt = (
+        select(JobPosting)
+        .options(defer(JobPosting.description))
+        .order_by(desc(JobPosting.discovered_at))
+    )
+    result = await db.execute(stmt)
+    jobs = result.scalars().all()
+
+    output = io.StringIO()
+    fields = [
+        "id", "title", "company", "location", "remote_status", "role_category",
+        "url", "source_platform", "posted_at_ist", "discovered_at_ist",
+        "match_score", "match_tier", "status", "applied_at_ist", "interview_stage", "notes"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+
+    for j in jobs:
+        d = j.to_dict(include_description=False)
+        writer.writerow({k: d.get(k, "") for k in fields})
+
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=jobs_export.csv"}
+    )
+
+@router.get("/export/json")
+async def export_jobs_json(db: AsyncSession = Depends(get_db)):
+    """Exports all discovered jobs as JSON."""
+    stmt = (
+        select(JobPosting)
+        .options(defer(JobPosting.description))
+        .order_by(desc(JobPosting.discovered_at))
+    )
+    result = await db.execute(stmt)
+    jobs = result.scalars().all()
+    return JSONResponse(
+        content=[j.to_dict(include_description=False) for j in jobs],
+        headers={"Content-Disposition": "attachment; filename=jobs_export.json"}
+    )
 
 @router.get("/{job_id}")
 async def get_job(job_id: int, db: AsyncSession = Depends(get_db)):

@@ -200,3 +200,24 @@ async def test_cleanup_purges_old_jobs_and_preserves_applied():
         assert (await db.get(JobPosting, old_id)) is None
         assert (await db.get(JobPosting, applied_id)) is not None
         assert (await db.get(JobPosting, recent_id)) is not None
+
+
+@pytest.mark.asyncio
+async def test_export_jobs_csv_and_json():
+    from app.core.security import create_session
+    await init_db()
+    async with async_session_factory() as db:
+        _, valid_cookie = await create_session(db, client_ip="127.0.0.1")
+
+    transport = ASGITransport(app=app)
+    cookies = {settings.ADMIN_SESSION_COOKIE: valid_cookie}
+    async with AsyncClient(transport=transport, base_url="http://test", cookies=cookies) as ac:
+        res_csv = await ac.get("/api/jobs/export/csv")
+        assert res_csv.status_code == 200
+        assert "text/csv" in res_csv.headers["content-type"]
+        assert "title,company,location" in res_csv.text
+
+        res_json = await ac.get("/api/jobs/export/json")
+        assert res_json.status_code == 200
+        assert isinstance(res_json.json(), list)
+
