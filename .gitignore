@@ -36,10 +36,8 @@ data/jobs.db
 data/jobs.db-journal
 data/jobs.db-wal
 data/jobs.db-shm
-data/tailored_resumes/*.pdf
-data/tailored_resumes/*.aux
-data/tailored_resumes/*.log
-data/tailored_resumes/*.out
+data/tailored_resumes/*
+!data/tailored_resumes/resume.cls
 
 # Testing & Cache
 .pytest_cache/

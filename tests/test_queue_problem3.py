@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import AsyncMock
 from httpx import ASGITransport, AsyncClient
 import pytest
 from sqlalchemy import select
@@ -19,6 +20,10 @@ def speed_up_asyncio_sleep(monkeypatch):
         return None
 
     monkeypatch.setattr("asyncio.sleep", fast_sleep)
+    monkeypatch.setattr(
+        "app.intelligence.cover_letter.CoverLetterGenerator.generate",
+        AsyncMock(return_value="Mocked cover letter"),
+    )
 
 
 @pytest.mark.asyncio
@@ -242,6 +247,11 @@ async def test_tailoring_runs_once_even_when_notification_fails(tmp_path, monkey
             "hiring_manager_email": {"body": "hello"},
             "linkedin_4mm": ["msg1"],
         },
+    )
+    monkeypatch.setattr(
+        engine.cover_letter_gen,
+        "generate",
+        AsyncMock(return_value="Mocked cover letter"),
     )
 
     now = clock.utcnow()

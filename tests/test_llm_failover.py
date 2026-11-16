@@ -45,3 +45,37 @@ async def test_llm_all_fail_triggers_heuristic():
         with patch.object(client, "_call_nvidia_nim", side_effect=Exception("Quota exceeded")):
             res = await client.generate_completion("system prompt", "user prompt")
             assert res == "HEURISTIC_GENERATION"
+
+
+@pytest.mark.asyncio
+async def test_llm_multi_provider_routing():
+    client = UnifiedLLMClient()
+
+    # 1. Test OpenAI routing
+    settings.OPENAI_API_KEY = "test_openai_key"
+    with patch.object(client, "_call_openai", new_callable=AsyncMock) as mock_openai:
+        mock_openai.return_value = "Response from OpenAI"
+        res = await client.generate(prompt="Hello", preferred_provider="openai")
+        assert res["text"] == "Response from OpenAI"
+        assert res["provider"] == "openai"
+        assert mock_openai.called
+
+    # 2. Test Anthropic routing
+    settings.ANTHROPIC_API_KEY = "test_anthropic_key"
+    with patch.object(client, "_call_anthropic", new_callable=AsyncMock) as mock_anthropic:
+        mock_anthropic.return_value = "Response from Claude"
+        res = await client.generate(prompt="Hello", preferred_provider="anthropic")
+        assert res["text"] == "Response from Claude"
+        assert res["provider"] == "anthropic"
+        assert mock_anthropic.called
+
+    # 3. Test Ollama routing
+    settings.OLLAMA_BASE_URL = "http://localhost:11434"
+    with patch.object(client, "_call_ollama", new_callable=AsyncMock) as mock_ollama:
+        mock_ollama.return_value = "Response from local Ollama"
+        res = await client.generate(prompt="Hello", preferred_provider="ollama")
+
+        assert res["text"] == "Response from local Ollama"
+        assert res["provider"] == "ollama"
+        assert mock_ollama.called
+

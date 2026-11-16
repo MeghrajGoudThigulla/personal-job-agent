@@ -68,17 +68,35 @@ class Settings(BaseSettings):
     JOBSPY_RESULTS_WANTED: int = int(os.getenv("JOBSPY_RESULTS_WANTED", "5"))
 
     # LLM Configuration
-    # Options: "auto" (Groq <-> NVIDIA NIM auto-failover), "groq", "nvidia"
+    # Options: "auto", "groq", "nvidia", "openai", "anthropic", "openrouter", "ollama"
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "auto")
 
     # Groq Settings
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
-    # NVIDIA NIM Settings (e.g. nvidia/nemotron-3-ultra-550b-a55b or meta/llama-3.1-70b-instruct)
+    # NVIDIA NIM Settings
     NVIDIA_NIM_API_KEY: str = os.getenv("NVIDIA_NIM_API_KEY", "")
     NVIDIA_NIM_MODEL: str = os.getenv("NVIDIA_NIM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b")
     NVIDIA_NIM_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+
+    # OpenAI Settings
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+    # Anthropic Settings
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+    ANTHROPIC_MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-latest")
+
+    # OpenRouter Settings
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct")
+
+    # Ollama Local Settings (Empty by default to avoid unneeded connection attempts)
+    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "")
+    OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3.2")
+
+
 
     # Notification Channels
     # Telegram Bot
