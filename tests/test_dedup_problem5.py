@@ -131,6 +131,7 @@ async def test_company_with_percent_and_underscore_not_matching_others_in_db(tmp
         await conn.run_sync(Base.metadata.create_all)
 
     monkeypatch.setattr("app.scrapers.engine.async_session_factory", test_session_factory)
+    monkeypatch.setattr("app.config.settings.AUTO_TAILOR_HIGH_MATCH", False)
     engine = ScraperEngine()
     monkeypatch.setattr(engine.notifier, "dispatch_job_alert", lambda *args, **kwargs: False)
 
@@ -180,4 +181,122 @@ async def test_company_with_percent_and_underscore_not_matching_others_in_db(tmp
         assert "A_B" in companies
 
     await test_engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_multiple_matches_in_seen_or_jobs_does_not_raise_multiple_results_found(tmp_path, monkeypatch):
+    """Verifies that multiple matching rows in seen_jobs or jobs table do not raise MultipleResultsFound."""
+    import hashlib
+    from app.core import clock
+    from app.core.models import SeenJob
+
+    db_path = tmp_path / "test_multi_match.db"
+    db_url = f"sqlite+aiosqlite:///{db_path}"
+    test_engine = create_async_engine(db_url)
+    test_session_factory = async_sessionmaker(bind=test_engine, class_=AsyncSession, expire_on_commit=False)
+
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    monkeypatch.setattr("app.scrapers.engine.async_session_factory", test_session_factory)
+    monkeypatch.setattr("app.config.settings.AUTO_TAILOR_HIGH_MATCH", False)
+    engine = ScraperEngine()
+    monkeypatch.setattr(engine.notifier, "dispatch_job_alert", lambda *args, **kwargs: False)
+
+    now = clock.utcnow()
+
+    # Pre-populate seen_jobs with two records
+    url1 = "https://example.com/seen1"
+    url2 = "https://example.com/seen2"
+    h1 = hashlib.sha256(url1.encode("utf-8")).hexdigest()
+    h2 = hashlib.sha256(url2.encode("utf-8")).hexdigest()
+    fp1 = "fingerprint_one"
+    fp2 = "fingerprint_two"
+
+    async with test_session_factory() as session:
+        session.add(SeenJob(url_hash=h1, fingerprint=fp1, first_seen_at=now, last_seen_at=now))
+        session.add(SeenJob(url_hash=h2, fingerprint=fp2, first_seen_at=now, last_seen_at=now))
+        await session.commit()
+
+    # Scrape job that matches h1 on url, but fp2 on fingerprint (matches 2 rows in seen_jobs!)
+    raw_jobs = [
+        {
+            "title": "Backend Engineer",
+            "company": "Acme",
+            "location": "Hyderabad",
+            "url": url1,
+            "source_platform": "DirectATS",
+            "description": "Python, SQL",
+            "posted_date": "yesterday",
+        }
+    ]
+
+    # Monkeypatch compute_fingerprint so it returns fp2 for this job
+    monkeypatch.setattr("app.scrapers.engine.compute_fingerprint", lambda **kwargs: fp2)
+
+    class MockScraper:
+        async def scrape(self):
+            return raw_jobs
+
+    engine.scrapers = [MockScraper()]
+
+    # Must complete cleanly without MultipleResultsFound
+    stats = await engine.run_discovery_cycle()
+    assert stats["new_jobs"] == 0
+
+    # Part 2: Multiple matches in jobs table
+    # Pre-populate jobs table with two records
+    url_job1 = "https://example.com/job1"
+    url_job2 = "https://example.com/job2"
+    fp_job1 = "job_fingerprint_one"
+    fp_job2 = "job_fingerprint_two"
+
+    async with test_session_factory() as session:
+        session.add(
+            JobPosting(
+                title="Job 1",
+                company="Company 1",
+                location="Hyderabad",
+                url=url_job1,
+                source_platform="Web",
+                fingerprint=fp_job1,
+            )
+        )
+        session.add(
+            JobPosting(
+                title="Job 2",
+                company="Company 2",
+                location="Hyderabad",
+                url=url_job2,
+                source_platform="Web",
+                fingerprint=fp_job2,
+            )
+        )
+        await session.commit()
+
+    # Scrape job that matches url_job1 on url, but fp_job2 on fingerprint
+    raw_jobs2 = [
+        {
+            "title": "Job 3",
+            "company": "Company 3",
+            "location": "Hyderabad",
+            "url": url_job1,
+            "source_platform": "Web",
+            "description": "Python, SQL",
+            "posted_date": "yesterday",
+        }
+    ]
+    monkeypatch.setattr("app.scrapers.engine.compute_fingerprint", lambda **kwargs: fp_job2)
+
+    class MockScraper2:
+        async def scrape(self):
+            return raw_jobs2
+
+    engine.scrapers = [MockScraper2()]
+    stats2 = await engine.run_discovery_cycle()
+    assert stats2["new_jobs"] == 0
+
+    await test_engine.dispose()
+
+
 

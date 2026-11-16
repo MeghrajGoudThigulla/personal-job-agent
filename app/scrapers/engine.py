@@ -123,20 +123,21 @@ class ScraperEngine:
                         seen_stmt = select(SeenJob).where(
                             (SeenJob.url_hash == url_hash) | (SeenJob.fingerprint == fp)
                         )
-                        existing_seen = (await session.execute(seen_stmt)).scalar_one_or_none()
-                        if existing_seen is not None:
-                            existing_seen.last_seen_at = now
+                        matched_seen = (await session.execute(seen_stmt)).scalars().all()
+                        if matched_seen:
+                            for s in matched_seen:
+                                s.last_seen_at = now
                             batch_urls.add(url)
                             batch_fingerprints.add(fp)
                             continue
 
                         # 2. Check jobs table (exact URL or exact fingerprint)
-                        existing_job = await session.execute(
+                        existing_job_res = await session.execute(
                             select(JobPosting.id).where(
                                 (JobPosting.url == url) | (JobPosting.fingerprint == fp)
-                            )
+                            ).limit(1)
                         )
-                        if existing_job.scalar_one_or_none() is not None:
+                        if existing_job_res.scalars().first() is not None:
                             batch_urls.add(url)
                             batch_fingerprints.add(fp)
                             continue
