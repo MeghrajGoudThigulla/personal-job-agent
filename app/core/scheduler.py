@@ -51,7 +51,7 @@ async def scheduled_digest_task():
             if top_jobs:
                 dispatcher = NotificationDispatcher()
                 for job in top_jobs:
-                    await dispatcher.notify_job(job.to_dict())
+                    await dispatcher.dispatch_job_alert(job.to_dict())
     except Exception as e:
         logger.error(f"Error during scheduled daily digest: {e}")
 

@@ -78,3 +78,8 @@ class NotificationDispatcher:
             logger.info(f"No external notification channels configured or fired for {job_data.get('title')}. Alert recorded in database.")
 
         return notified_any
+
+    async def notify_job(self, job_data: Dict[str, Any]) -> bool:
+        """Alias for dispatch_job_alert for backwards/future compatibility."""
+        return await self.dispatch_job_alert(job_data)
+
