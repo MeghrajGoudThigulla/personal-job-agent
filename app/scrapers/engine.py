@@ -14,6 +14,7 @@ from app.core.system import get_process_memory_mb
 from app.core.trace import log_audit_event
 from app.intelligence.stair_matcher import StairMatcher
 from app.intelligence.resume_tailor import ResumeTailor
+from app.intelligence.resume_variants import ResumeVariantManager
 from app.intelligence.outreach_generator import OutreachGenerator
 from app.intelligence.pdf_compiler import PDFCompiler
 from app.intelligence.liveness import posting_is_closed
@@ -342,7 +343,11 @@ class ScraperEngine:
                                 j.tailor_status = "done"
                             await session.commit()
 
+                        alert_payload["variant"] = tailor_res.get("variant", "base")
+                        alert_payload["variant_headline"] = tailor_res.get("variant_headline", "")
                         alert_payload["tailored_tex"] = tailor_res["tailored_tex"]
+                        alert_payload["pdf_path"] = pdf_res.get("pdf_path", "")
+                        alert_payload["tex_path"] = pdf_res.get("tex_path", "")
                     except Exception as tailor_e:
                         logger.error(f"Auto-tailor failed for job {hm['job_id']}: {tailor_e}")
                         async with async_session_factory() as session:
@@ -353,14 +358,33 @@ class ScraperEngine:
                 elif hm["tailor_status"] == "done":
                     async with async_session_factory() as session:
                         res = await session.execute(
-                            select(TailoredApplication.tailored_resume_tex)
+                            select(TailoredApplication)
                             .where(TailoredApplication.job_id == hm["job_id"])
                             .order_by(TailoredApplication.created_at.desc())
                             .limit(1)
                         )
-                        existing_tex = res.scalar_one_or_none()
-                        if existing_tex:
-                            alert_payload["tailored_tex"] = existing_tex
+                        existing_app = res.scalar_one_or_none()
+                        if existing_app:
+                            alert_payload["tailored_tex"] = existing_app.tailored_resume_tex
+                            alert_payload["pdf_path"] = existing_app.pdf_path
+
+                # Ensure matching resume variant is always selected and attached
+                if not alert_payload.get("variant"):
+                    v_mgr = ResumeVariantManager()
+                    v_slug = v_mgr.select_best_variant(
+                        title=hm.get("title", ""),
+                        role_category=hm.get("role_category", ""),
+                        description=hm.get("description", ""),
+                        matched_skills=hm["eval_res"].get("matched_skills", [])
+                    )
+                    v_doc = v_mgr.generate_variant_document(v_slug, company=hm["company"], job_title=hm["title"], job_id=hm["job_id"])
+                    alert_payload["variant"] = v_slug
+                    alert_payload["variant_headline"] = v_doc["headline"]
+                    if not alert_payload.get("tailored_tex"):
+                        alert_payload["tailored_tex"] = v_doc["latex_content"]
+                    if not alert_payload.get("pdf_path"):
+                        alert_payload["pdf_path"] = v_doc.get("pdf_path", "")
+                        alert_payload["tex_path"] = v_doc.get("tex_path", "")
 
                 # 2. Fire Real-time Notification (Job Alert -> Cover Letter -> Tailored LaTeX Code)
                 if has_notifier:

@@ -43,207 +43,153 @@
 \quad
 \href{https://github.com/MeghrajGoudThigulla}{GitHub}
 \quad
-\href{https://linktr.ee/meghraj_goud_thigulla}{Certificates}
+\href{https://linktr.ee/meghraj\_goud\_thigulla}{Certificates}
 }
+
+% ---- Role selection: build.sh replaces base for each resume ----
+\def\Variant{base}
+% ===== Shared content pool. Edit a bullet here and every role variant picks it up. =====
+
+% ---- Projects (product header with two bullets each) ----
+\newcommand{\eA}{\item \textbf{TFG Verify (BGV/KYC platform):}
+  \begin{itemize}
+  \item Built FastAPI services with 206 API routes, 58 SQLAlchemy models and 25 Alembic migrations.
+  \item Implemented Celery/Redis workers, signed webhooks and Row-Level Security.
+  \end{itemize}}
+\newcommand{\eB}{\item \textbf{TFG SecureBanking (digital lending):}
+  \begin{itemize}
+  \item Built a multi-tenant FastAPI backend with 174 REST endpoints.
+  \item Built an Excel-driven credit rules engine (openpyxl, xlcalculator) and WeasyPrint sanction-letter PDFs.
+  \end{itemize}}
+\newcommand{\eC}{\item \textbf{DealsMart (e-commerce, pre-release):}
+  \begin{itemize}
+  \item Built a backend with 152 API routes, 92 SQLAlchemy models and 40 migrations.
+  \item Implemented cart and checkout services, Razorpay webhook deduplication, idempotent refunds and eight RQ background jobs.
+  \end{itemize}}
+\newcommand{\eD}{\item \textbf{Medical Advisor (healthcare):}
+  \begin{itemize}
+  \item Built a FastAPI backend with 230 API routes (including WebSockets) and 47 migrations.
+  \item Implemented JWT auth, Google Play Integrity nonce checks and PostgreSQL-to-Firestore sync for emergency workflows.
+  \end{itemize}}
+\newcommand{\eE}{\item \textbf{Medical Advisor (mobile and admin):}
+  \begin{itemize}
+  \item Built a Flutter app with 195 screen-directory files and an Android release configuration (com.tfg.medicaladvisor, v1.0.1).
+  \item Built a Flutter Web admin console.
+  \end{itemize}}
+\newcommand{\eM}{\item \textbf{TFG Corporate Website (Next.js rebuild):}
+  \begin{itemize}
+  \item Rebuilt the site in Next.js with 11 App Router page routes across 6 locales and 17 permanent legacy redirects.
+  \item Built an AI careers application flow, with an nginx reverse proxy and systemd deployment with rollback scripts.
+  \end{itemize}}
+\newcommand{\eN}{\item \textbf{IYOV AI Assessments and Job Portal:}
+  \begin{itemize}
+  \item Built a coding-assessment engine on the Piston execution sandbox with timeouts, fullscreen and tab-switch detection, dynamic risk scoring and daily attempt limits.
+  \item Delivered the candidate Job Portal.
+  \end{itemize}}
+
+% ---- Experience (company-level outcomes) ----
+\newcommand{\eF}{\item Prepared Android and iOS release builds and store submissions for 6 apps per platform, typically under one hour per platform, excluding store review.}
+\newcommand{\eG}{\item Deployed 50--100 applications to AWS EC2 (new rollouts and production updates), typically under 30 minutes each.}
+\newcommand{\eH}{\item Built the OCR and document-verification pipeline on PaddleOCR (ONNX Runtime), a 64-type document taxonomy and BGE-M3 embeddings; about 8 documents per minute, with an estimated 75\% reduction in manual verification work.}
+\newcommand{\eI}{\item Built the India statutory payroll engine (PF, ESI, TDS, professional tax) for IYOV AI, eliminating manual calculation steps for an internal eight-employee payroll workflow.}
+\newcommand{\eJ}{\item Mentored 8 engineers through codebase walkthroughs, architecture explanations and code reviews; acted as technical consultant to stakeholders, turning ambiguous requirements into delivery milestones.}
+\newcommand{\eK}{\item Contributed to raising backend pytest coverage from 43\% to 73.4\%.}
+\newcommand{\eL}{\item Maintained GitHub Actions workflows and Docker configurations for backend deployment, staging and canary releases.}
+\newcommand{\eP}{\item \textbf{Live on Google Play and the App Store:} IYOV AI \href{https://play.google.com/store/apps/details?id=ai.iyov.employee}{Employee}, \href{https://play.google.com/store/apps/details?id=ai.iyov.jobs}{Jobs}, \href{https://play.google.com/store/apps/details?id=ai.iyov.lms}{LMS} and \href{https://play.google.com/store/apps/details?id=ai.iyov.hrms}{HRMS} apps on Android, with Employee (\href{https://apps.apple.com/in/app/iyov-employee/id6798276433}{App Store}), LMS (\href{https://apps.apple.com/in/app/iyov-lms/id6800318336}{App Store}) and HRMS (\href{https://apps.apple.com/in/app/iyov-hrms/id6798589436}{App Store}) on iOS; \href{https://play.google.com/store/apps/details?id=com.tfg.medicaladvisor}{Medical Advisor} and \href{https://play.google.com/store/apps/details?id=com.tfg.securebanking}{TFG SecureBanking} on Google Play.}
+
+% ---- Skill rows (label & content) ----
+\newcommand{\sLang}{Languages & Python, Dart, JavaScript, TypeScript, C\#, SQL \\}
+\newcommand{\sBack}{Backend & FastAPI, Flask, Express, Celery, SQLAlchemy, Alembic, Prisma, .NET \\}
+\newcommand{\sFront}{Frontend & React, Next.js, Tailwind CSS, MUI \\}
+\newcommand{\sMob}{Mobile & Flutter, Riverpod, GoRouter, Firebase, Google Maps SDK \\}
+\newcommand{\sData}{Databases & PostgreSQL, MySQL, MongoDB, Redis, Firestore, Supabase \\}
+\newcommand{\sArch}{Architecture & REST APIs, JWT, RBAC, Row-Level Security, Webhooks, WebSockets, Rate Limiting \\}
+\newcommand{\sAI}{AI/ML \& OCR & PaddleOCR (ONNX Runtime), BGE-M3 embeddings, sentence-transformers, RapidFuzz \\}
+\newcommand{\sDev}{DevOps & Docker, AWS EC2, GitHub Actions, nginx, systemd, Git \\}
+% ===== Role variants. H = headline, E = experience bullets, P = project bullets, S = skill row order.
+% Every variant includes all experience bullets and all projects; only the order and lead emphasis change. =====
+
+% ---- Base (general) ----
+\expandafter\def\csname vbaseH\endcsname{Senior AI Developer \& Full Stack Engineer \textbar{} Python, FastAPI, Flutter, Next.js}
+\expandafter\def\csname vbaseE\endcsname{\eP\eF\eG\eH\eI\eJ\eK\eL}
+\expandafter\def\csname vbaseP\endcsname{\eA\eB\eC\eD\eE\eM\eN}
+\expandafter\def\csname vbaseS\endcsname{\sLang\sBack\sFront\sMob\sData\sArch\sAI\sDev}
+
+% ---- Python / Backend developer ----
+\expandafter\def\csname vbackendH\endcsname{Backend Developer \textbar{} Python, FastAPI, PostgreSQL, Celery, Redis}
+\expandafter\def\csname vbackendE\endcsname{\eG\eK\eL\eI\eJ\eH\eF\eP}
+\expandafter\def\csname vbackendP\endcsname{\eA\eB\eC\eD\eN\eE\eM}
+\expandafter\def\csname vbackendS\endcsname{\sBack\sLang\sData\sArch\sAI\sDev\sFront\sMob}
+
+% ---- AI / ML engineer ----
+\expandafter\def\csname vaiH\endcsname{AI/ML Engineer \textbar{} Applied AI, OCR, Embeddings, FastAPI}
+\expandafter\def\csname vaiE\endcsname{\eH\eI\eK\eJ\eG\eL\eF\eP}
+\expandafter\def\csname vaiP\endcsname{\eA\eN\eB\eC\eD\eE\eM}
+\expandafter\def\csname vaiS\endcsname{\sAI\sLang\sBack\sData\sDev\sArch\sFront\sMob}
+
+% ---- Flutter / Mobile developer ----
+\expandafter\def\csname vmobileH\endcsname{Flutter \& Mobile Developer \textbar{} Flutter, Dart, Firebase, FastAPI}
+\expandafter\def\csname vmobileE\endcsname{\eF\eP\eG\eK\eL\eJ\eI\eH}
+\expandafter\def\csname vmobileP\endcsname{\eE\eD\eN\eA\eB\eC\eM}
+\expandafter\def\csname vmobileS\endcsname{\sMob\sLang\sBack\sData\sDev\sArch\sFront\sAI}
+
+% ---- Full Stack ----
+\expandafter\def\csname vfullstackH\endcsname{Full Stack Engineer \& AI Developer \textbar{} React, Next.js, FastAPI, Flutter}
+\expandafter\def\csname vfullstackE\endcsname{\eG\eH\eI\eJ\eK\eL\eF\eP}
+\expandafter\def\csname vfullstackP\endcsname{\eM\eE\eA\eB\eC\eD\eN}
+\expandafter\def\csname vfullstackS\endcsname{\sFront\sBack\sLang\sMob\sData\sArch\sAI\sDev}
+
+% ---- Frontend / React / Next.js ----
+\expandafter\def\csname vfrontendH\endcsname{Frontend Developer \textbar{} React, Next.js, TypeScript, Flutter Web}
+\expandafter\def\csname vfrontendE\endcsname{\eK\eL\eF\eP\eG\eJ\eH\eI}
+\expandafter\def\csname vfrontendP\endcsname{\eM\eE\eN\eA\eB\eC\eD}
+\expandafter\def\csname vfrontendS\endcsname{\sFront\sLang\sBack\sMob\sDev\sData\sArch\sAI}
+
+% ---- Technology Consulting ----
+\expandafter\def\csname vconsultingH\endcsname{Technology Consultant \& Senior Engineer \textbar{} Architecture, Delivery, Stakeholder Management}
+\expandafter\def\csname vconsultingE\endcsname{\eJ\eP\eF\eG\eH\eK\eI\eL}
+\expandafter\def\csname vconsultingP\endcsname{\eA\eB\eC\eN\eD\eE\eM}
+\expandafter\def\csname vconsultingS\endcsname{\sArch\sBack\sData\sAI\sLang\sDev\sFront\sMob}
+\newcommand{\Headline}{\csname v\Variant H\endcsname}
+\newcommand{\ExpList}{\csname v\Variant E\endcsname}
+\newcommand{\ProjList}{\csname v\Variant P\endcsname}
+\newcommand{\SkillOrder}{\csname v\Variant S\endcsname}
 
 \begin{document}
 \sloppy
 
-% =========================================================
-% EXPERIENCE
-% =========================================================
+\begin{center}\large\textbf{\Headline}\end{center}
 
-\begin{rSection}{EXPERIENCE}
-
-\textbf{Senior AI Developer \& Full Stack Engineer}
-\hfill July 2024 - Oct 2026 \\
-Threshing Floor Group, Hyderabad
-\hfill \href{https://tfgroup.ai/en}{tfgroup.ai}
-
-\vspace{-2pt}
-
+\begin{rSection}{Experience}
+\textbf{Full Stack Engineer \& Senior AI Developer} \hfill July 2024 -- October 2026 \\
+Threshing Floor Group, Hyderabad \hfill \href{https://tfgroup.ai/en}{tfgroup.ai}
 \begin{itemize}
-    \item Delivered backend infrastructure of 286 endpoints, 61+ database models, and 30+ Alembic/Prisma migrations across multiple production products, owning schema design end to end. % METRIC: users served / uptime
-    \item Shipped 80+ mobile screens and 96+ web interfaces with Flutter, React, and Next.js on FastAPI backends, partnering with design and product to deliver on schedule.
-    \item Owned App Store / Play Store releases and deployment pipelines for 4+ Flutter apps (Employee Portal, HRMS, LMS, Care Navigator).
-    \item Engineered PostgreSQL/Supabase data layers with Row-Level Security, Redis rate limiting, Celery webhook workers, and dual-store WebSocket sync.
-    \item Deployed ML pipelines (OCR, embeddings) and third-party provider APIs into production FastAPI services.
-    \item Partnered with executive stakeholders as technical consultant, converting ambiguous requirements into shippable milestones; directed knowledge transfer for 8 engineers.
+\ExpList
 \end{itemize}
-
 \end{rSection}
 
-% =========================================================
-% SKILLS
-% =========================================================
-\begin{rSection}{SKILLS}
+\begin{rSection}{Projects}
+\begin{itemize}
+\ProjList
+\end{itemize}
+\end{rSection}
 
-\vspace{-2pt}
-
-\begin{tabularx}{\textwidth}{
-    @{}
-    >{\bfseries}p{1.6in}
-    X
-    @{}
-}
-Languages &
-C\#, Python, Dart, JavaScript, TypeScript, C++, SQL \\
-
-Backend &
-ASP.NET Core, .NET Web API, Entity Framework Core, LINQ, MediatR, SignalR, FluentValidation, Serilog, MailKit, FastAPI, Flask, Express, Celery, SQLAlchemy, Alembic, Prisma \\
-
-Frontend \& Mobile &
-Flutter, React, Next.js, HTML5, CSS3, JavaScript (ES6+), Tailwind CSS, MUI \\
-
-Databases &
-SQL Server, SQLite, PostgreSQL, MySQL, MongoDB, Redis, Firestore, Supabase \\
-
-Architecture &
-Clean Architecture, CQRS, REST APIs, RBAC, JWT, SignalR, Concurrency Control, Transactional Outbox, Rate Limiting, Caching, Row-Level Security \\
-
-AI/ML \& OCR &
-ONNX Runtime, PaddleOCR, PyTesseract, Sentence Transformers, Embeddings, Model Gateway Services \\
-
-DevOps \& Tooling &
-Docker, Docker Compose, GitHub Actions, Render, NetArchTest, AWS EC2, nginx, systemd, Git, Visual Studio, VS Code, NuGet, xUnit \\
+\begin{rSection}{Skills}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}p{1.6in}X@{}}
+\SkillOrder
 \end{tabularx}
-
 \end{rSection}
 
-% =========================================================
-% PROJECTS
-% =========================================================
-
-\begin{rSection}{PROJECTS}
-
-% ---------------- TALENTFLOW (.NET) ----------------
-
-\Needspace{8\baselineskip}
-
-\textbf{TalentFlow} -- Enterprise Applicant Tracking System \& Pipeline (Personal Project)
-\hfill \href{https://talentflow-6tgp.onrender.com}{Live Demo} \quad \href{https://github.com/MeghrajGoudThigulla/TalentFlow}{GitHub} \\[-1pt]
-\textit{Tech: C\#, .NET 8, ASP.NET Core, EF Core, SQL Server, MediatR, SignalR, Docker, Serilog, NetArchTest, xUnit}
-
-\vspace{-2pt}
-
-\begin{itemize}
-    \item Architected a .NET 8 Web API with Clean Architecture and CQRS (MediatR), enforcing pipeline behaviors (Validation $\rightarrow$ Logging $\rightarrow$ Transaction $\rightarrow$ Audit); achieved \textbf{73.4\% test coverage} across \textbf{90 automated tests} (xUnit, NetArchTest, WebApplicationFactory).
-    \item Implemented the \textbf{Transactional Outbox Pattern} with SQL Server atomic table claims (\texttt{UPDLOCK, READPAST}), exponential backoff, and deduplication keys, guaranteeing at-least-once candidate email delivery via MailKit.
-    \item Designed \texttt{RowVersion} optimistic concurrency control resolving concurrent card movements with HTTP 409 Conflict; broadcast zero-latency Kanban pipeline updates across recruiter sessions via authenticated \textbf{SignalR} WebSocket groups.
-    \item Hardened application security against OWASP API Top 10: resource-based authorization (IDOR prevention on candidate evaluations), fixed-window rate limiting, magic-byte file signature validation on CVs, and request correlation IDs with Serilog.
-    \item Containerized multi-service stack with \textbf{Docker Compose} (API, SQL Server 2022, MailHog) and automated CI/CD via \textbf{GitHub Actions} with automated coverage gates, zero compiler warnings (\texttt{-warnaserror}), and continuous deployment to \textbf{Render}.
-\end{itemize}
-
-\vspace{3pt}
-
-% ---------------- IYOV AI ----------------
-
-\Needspace{8\baselineskip}
-
-\textbf{IYOV AI} -- AI-Powered Workforce Management Ecosystem
-\hfill \href{https://iyov.ai/}{iyov.ai} \\[-1pt]
-\textit{Tech: Python, FastAPI, Flutter, Riverpod, GoRouter, Next.js, PostgreSQL, Redis, Firebase}
-
-\vspace{-2pt}
-
-\begin{itemize}
-    \item Owned the India tax and compliance payroll module from scratch, translating complex statutory rules into automated payroll formulas. % METRIC: employees/batch size, processing time
-    \item Streamlined payroll batches, document processing, and bulk worker notifications with Redis-backed job queues.
-    \item Released 4+ companion Flutter apps (Employee Portal, HRMS, LMS, Care Navigator) to App Store / Play Store.
-    \item Streamlined mobile build configurations and automated pipelines, shortening turnaround for critical hotfixes.
-\end{itemize}
-
-\vspace{3pt}
-
-% ---------------- TFG SECUREBANKING ----------------
-
-\Needspace{8\baselineskip}
-
-\textbf{TFG SecureBanking} -- Digital Fintech Application
-\hfill \href{https://tfgsecurebank.com/}{tfgsecurebank.com} \\[-1pt]
-\textit{Tech: Python, FastAPI, SQLAlchemy, Alembic, PostgreSQL, Redis, WeasyPrint}
-
-\vspace{-2pt}
-
-\begin{itemize}
-    \item Architected a multi-tenant FastAPI backend of 70 REST endpoints, routing between PostgreSQL/Supabase and legacy MySQL.
-    \item Engineered a rules engine (openpyxl, xlcalculator) that executes credit validation matrices directly from Excel templates.
-    \item Delivered tamper-proof loan agreement PDFs using WeasyPrint and Jinja2 templates.
-\end{itemize}
-
-\vspace{3pt}
-
-% ---------------- TFGENAPI ----------------
-
-\Needspace{8\baselineskip}
-
-\textbf{TFGenAPI} -- Verification \& Custom API Platform
-\hfill \href{https://tfgenapi.ai/}{tfgenapi.ai} \\[-1pt]
-\textit{Tech: Next.js 16, Python, FastAPI, MongoDB, PyTesseract, Sentence Transformers}
-
-\vspace{-2pt}
-
-\begin{itemize}
-    \item Owned the verification API platform end to end, from database design to cross-layer integration. % METRIC: docs verified, latency, accuracy
-    \item Deployed an AI inference pipeline combining PyTesseract OCR with Sentence Transformers embeddings for document matching.
-    \item Specialized in MongoDB (Motor) data modeling for high-throughput unstructured document ingestion and ML feature persistence.
-    \item Executed asynchronous verification flows and webhook notifications with Celery/Redis task queues.
-\end{itemize}
-
-\vspace{3pt}
-
-% ---------------- MEDICAL ADVISOR ----------------
-
-\Needspace{7\baselineskip}
-
-\textbf{Medical Advisor} -- Mission-Critical Healthcare API
-\hfill \href{https://play.google.com/store/apps/details?id=com.tfg.medicaladvisor&pcampaignid=web_share}{Play Store} \\[-1pt]
-\textit{Tech: Python, FastAPI, PostgreSQL, Redis, Firebase/GCP, Docker}
-
-\vspace{-2pt}
-
-\begin{itemize}
-    \item Architected a FastAPI microservice secured with strict JWT authentication and Google Play Integrity nonces.
-    \item Engineered an asynchronous dual-write pipeline syncing PostgreSQL transaction state to Firestore for real-time WebSockets.
-    \item Directed knowledge transfer as technical lead, onboarding 8 engineers.
-\end{itemize}
-
-\vspace{3pt}
-
-\textbf{Additional Projects:}
-\textbf{DealsMart} (Flutter, FastAPI, PostgreSQL, RQ workers; delivered ACID cart mutations and idempotent payment reconciliation; pre-release);
-\href{https://tfgroup.ai/en}{\textbf{TFG Corporate Website}} (Next.js, Flask; executed zero-downtime migration from legacy static site);
-\href{https://groconnect.co.in/}{\textbf{GroConnect}} (PHP, Node.js; delivered client portal and AI training platform).
-
-\end{rSection}
-
-% =========================================================
-% EDUCATION
-% =========================================================
-
-\begin{rSection}{EDUCATION}
-
-\textbf{Bachelor of Technology in Information Technology}
-\hfill 2020--2024 \\
+\begin{rSection}{Education}
+\textbf{Bachelor of Technology in Information Technology} \hfill 2020--2024 \\
 Vignana Bharathi Institute of Technology (VBIT), Ghatkesar
-
 \end{rSection}
 
-% =========================================================
-% CERTIFICATIONS
-% =========================================================
-
-\begin{rSection}{CERTIFICATIONS}
-
-\vspace{-2pt}
-
+\begin{rSection}{Certifications}
 \begin{itemize}
-    \item \textbf{AWS Academy}: Cloud Foundations; Machine Learning Foundations; AI-ML Virtual Internship
-    \item \textbf{Cisco}: Networking Essentials; Introduction to Cybersecurity; Cybersecurity Essentials
-    \item \textbf{Fortinet}: Certified Fundamentals; Certified Associate in Cybersecurity; Network Security Associate Virtual Internship
-    \item \textbf{Celonis}: Foundations; Academic Process Mining Fundamentals; Execution Management Consulting Program
+\item \textbf{AWS Academy:} Cloud Foundations; Machine Learning Foundations
+\item \textbf{Cisco:} Introduction to Cybersecurity
 \end{itemize}
-
 \end{rSection}
 
 \end{document}

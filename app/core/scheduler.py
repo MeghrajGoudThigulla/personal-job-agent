@@ -69,8 +69,6 @@ async def scheduled_weekly_digest_task():
         logger.error(f"Error during scheduled weekly digest: {e}")
 
 
-
-
 async def scheduled_email_monitor_task():
     has_creds = bool((settings.GMAIL_USER and settings.GMAIL_APP_PASSWORD) or (settings.OUTLOOK_USER and settings.OUTLOOK_APP_PASSWORD))
     if not settings.EMAIL_MONITOR_ENABLED and not has_creds:
@@ -84,6 +82,65 @@ async def scheduled_email_monitor_task():
         logger.error(f"Error during scheduled email monitor scan: {e}")
 
 
+async def scheduled_linkedin_post_task():
+    """Generates and dispatches daily LinkedIn engineering post draft at 09:00 IST."""
+    logger.info("Executing scheduled daily LinkedIn post draft task at 09:00 IST...")
+    try:
+        from datetime import datetime, timezone, timedelta
+        from sqlalchemy import select
+        from app.core.database import async_session_factory
+        from app.core.models import LinkedInPost
+        from app.intelligence.linkedin_post_generator import LinkedInPostGenerator
+        from app.notifiers.telegram import TelegramNotifier
+
+        ist = timezone(timedelta(hours=5, minutes=30))
+        today_str = datetime.now(ist).strftime("%Y-%m-%d")
+
+        async with async_session_factory() as session:
+            res = await session.execute(select(LinkedInPost).where(LinkedInPost.post_date == today_str))
+            existing = res.scalar_one_or_none()
+            if existing and existing.notified_telegram:
+                logger.info(f"Daily LinkedIn post for {today_str} already exists and notified.")
+                return
+
+            if not existing:
+                gen = LinkedInPostGenerator()
+                draft = await gen.generate_daily_post()
+                existing = LinkedInPost(
+                    post_date=today_str,
+                    theme=draft["theme"],
+                    hook=draft["hook"],
+                    content=draft["content"],
+                    hashtags=draft["hashtags"],
+                    call_to_action=draft["call_to_action"],
+                    posted=False,
+                    notified_telegram=False,
+                )
+                session.add(existing)
+                await session.commit()
+                await session.refresh(existing)
+
+            # Send to Telegram
+            telegram = TelegramNotifier()
+            if telegram.is_configured and not existing.notified_telegram:
+                msg = (
+                    f"📱 *DAILY LINKEDIN POST DRAFT*\n"
+                    f"📅 *Date:* {today_str} • *Theme:* {existing.theme}\n\n"
+                    f"💡 *Hook:*\n_{existing.hook}_\n\n"
+                    f"📝 *Full Post Body (Copy & Share):*\n"
+                    f"```{existing.content}```\n\n"
+                    f"🏷️ *Hashtags:* {existing.hashtags}\n\n"
+                    f"👉 [Open LinkedIn to Post](https://www.linkedin.com/feed/)"
+                )
+                sent = await telegram.send_message(msg, parse_mode="Markdown")
+                if sent:
+                    existing.notified_telegram = True
+                    await session.commit()
+                    logger.info(f"Dispatched daily LinkedIn post to Telegram for {today_str}.")
+    except Exception as e:
+        logger.error(f"Error during scheduled LinkedIn post draft: {e}")
+
+
 def get_scheduler_status() -> Dict[str, Any]:
     job = scheduler.get_job("job_discovery_cycle") if scheduler.running else None
     next_run = job.next_run_time.isoformat() if job and job.next_run_time else None
@@ -93,6 +150,9 @@ def get_scheduler_status() -> Dict[str, Any]:
     next_digest = digest_job.next_run_time.isoformat() if digest_job and digest_job.next_run_time else None
     email_job = scheduler.get_job("email_monitor_cycle") if scheduler.running else None
     next_email = email_job.next_run_time.isoformat() if email_job and email_job.next_run_time else None
+    linkedin_job = scheduler.get_job("daily_linkedin_post") if scheduler.running else None
+    next_linkedin = linkedin_job.next_run_time.isoformat() if linkedin_job and linkedin_job.next_run_time else None
+
     return {
         "running": scheduler.running,
         "interval_minutes": settings.SCRAPE_INTERVAL_MINUTES,
@@ -100,6 +160,7 @@ def get_scheduler_status() -> Dict[str, Any]:
         "next_cleanup_at": next_cleanup,
         "next_digest_at": next_digest,
         "next_email_scan_at": next_email,
+        "next_linkedin_post_at": next_linkedin,
         "retention_days": settings.DATA_RETENTION_DAYS,
     }
 
@@ -143,6 +204,17 @@ def start_scheduler():
         replace_existing=True,
     )
 
+    # Schedule daily LinkedIn post draft at 09:00 IST
+    scheduler.add_job(
+        scheduled_linkedin_post_task,
+        "cron",
+        hour=9,
+        minute=0,
+        timezone="Asia/Kolkata",
+        id="daily_linkedin_post",
+        replace_existing=True,
+    )
+
     # Schedule weekly executive digest every Sunday at 10:00 IST
     scheduler.add_job(
         scheduled_weekly_digest_task,
@@ -154,7 +226,6 @@ def start_scheduler():
         id="weekly_pipeline_digest",
         replace_existing=True,
     )
-
 
     # Schedule email monitor (Gmail & Outlook)
     if settings.EMAIL_MONITOR_ENABLED or (settings.GMAIL_USER and settings.GMAIL_APP_PASSWORD) or (settings.OUTLOOK_USER and settings.OUTLOOK_APP_PASSWORD):

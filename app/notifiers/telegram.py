@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 import httpx
 from app.config import settings
 from app.core.trace import log_audit_event
@@ -38,7 +41,7 @@ def split_latex_chunks(code: str, max_chunk_size: int = 3400) -> List[str]:
 
 
 class TelegramNotifier:
-    """Sends real-time job alerts to Meghraj via Telegram Bot with sequential multi-message delivery."""
+    """Sends real-time job alerts and resumes to Meghraj via Telegram Bot with sequential multi-message delivery."""
 
     def __init__(self, bot_token: Optional[str] = None, chat_id: Optional[str] = None):
         self._override_token = bot_token
@@ -59,9 +62,10 @@ class TelegramNotifier:
     async def send_job_alert(self, job_data: Dict[str, Any]) -> bool:
         """
         Dispatches multi-part sequential alert:
-        1. Primary Job Notification
+        1. Primary Job Notification (with matched resume variant)
         2. Subsequent Message: Anti-slop text-only Cover Letter
-        3. Subsequent Message(s): Tailored Resume LaTeX code (chunked as needed)
+        3. Direct Document: Matched Resume (PDF or .tex file sent directly to Telegram)
+        4. Subsequent Message(s): Tailored Resume LaTeX code (chunked as needed)
         """
         if not self.is_configured:
             return False
@@ -75,12 +79,19 @@ class TelegramNotifier:
         url = job_data.get("url", "")
         matched_skills = job_data.get("matched_skills", [])
         job_id = job_data.get("id", "")
+        variant = job_data.get("variant", "base")
+        variant_headline = job_data.get("variant_headline", "")
 
         skills_str = ", ".join(matched_skills[:6]) if matched_skills else "Python, Backend"
 
         posted_str = job_data.get("posted_at_ist") or job_data.get("posted_date") or "Recently discovered"
         if job_data.get("posted_date_unverified"):
             posted_str += " (unverified date)"
+
+        variant_line = ""
+        if variant:
+            display_headline = f" — {variant_headline}" if variant_headline else ""
+            variant_line = f"📋 *Matched Resume Variant:* `{variant.upper()}`{display_headline}\n"
 
         # 1. Primary Message: Job Notification
         job_alert_text = (
@@ -91,7 +102,8 @@ class TelegramNotifier:
             f"📅 *Posted:* {posted_str}\n"
             f"🎯 *Match Score:* `{match_score}%` ({match_tier})\n"
             f"🏷️ *Category:* {role_category}\n"
-            f"🛠️ *Stack Match:* {skills_str}\n\n"
+            f"🛠️ *Stack Match:* {skills_str}\n"
+            f"{variant_line}\n"
             f"🔗 [Direct Apply Link]({url})"
         )
 
@@ -99,7 +111,7 @@ class TelegramNotifier:
         if not ok:
             return False
 
-        await log_audit_event("telegram_notification", {"job_id": job_id, "company": company}, "success")
+        await log_audit_event("telegram_notification", {"job_id": job_id, "company": company, "variant": variant}, "success")
 
         # 2. Subsequent Message: Cover Letter (sent separately for clean copy-paste)
         cover_letter = job_data.get("cover_letter")
@@ -113,7 +125,22 @@ class TelegramNotifier:
             )
             await self.send_message(cl_text, parse_mode="Markdown")
 
-        # 3. Subsequent Message(s): Tailored Resume LaTeX code
+        # 3. Direct Document Delivery: Send Resume File (PDF or .tex) directly into Telegram
+        pdf_path = job_data.get("pdf_path")
+        tex_path = job_data.get("tex_path")
+
+        if pdf_path and Path(pdf_path).exists() and Path(pdf_path).suffix.lower() == ".pdf":
+            await asyncio.sleep(0.35)
+            pdf_filename = Path(pdf_path).name
+            caption = f"📄 *Matching Resume PDF ({variant.upper()})* ready to submit for {company} — {title}"
+            await self.send_document(Path(pdf_path), filename=pdf_filename, caption=caption)
+        elif tex_path and Path(tex_path).exists():
+            await asyncio.sleep(0.35)
+            tex_filename = Path(tex_path).name
+            caption = f"📄 *Matching Resume LaTeX ({variant.upper()})* for {company} — {title}"
+            await self.send_document(Path(tex_path), filename=tex_filename, caption=caption)
+
+        # 4. Subsequent Message(s): Tailored Resume LaTeX code chunks (for instant reading/copying)
         tailored_tex = job_data.get("tailored_tex")
         if tailored_tex:
             await asyncio.sleep(0.35)
@@ -132,6 +159,62 @@ class TelegramNotifier:
                     await asyncio.sleep(0.35)
 
         return True
+
+    async def send_document(
+        self,
+        document: Union[Path, str, bytes],
+        filename: str,
+        caption: str = "",
+        parse_mode: Optional[str] = "Markdown",
+    ) -> bool:
+        """Sends a file/document directly to Telegram via sendDocument."""
+        if not self.is_configured:
+            return False
+
+        api_url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
+
+        file_bytes: bytes = b""
+        if isinstance(document, (str, Path)):
+            p = Path(document)
+            if not p.exists():
+                logger.warning(f"File {p} does not exist for sendDocument.")
+                return False
+            file_bytes = p.read_bytes()
+        elif isinstance(document, bytes):
+            file_bytes = document
+        else:
+            return False
+
+        data = {"chat_id": self.chat_id}
+        if caption:
+            data["caption"] = caption
+        if parse_mode:
+            data["parse_mode"] = parse_mode
+
+        files = {"document": (filename, file_bytes)}
+
+        try:
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                res = await client.post(api_url, data=data, files=files)
+                res.raise_for_status()
+                return True
+        except Exception as e:
+            # Retry without parse_mode if formatting in caption failed
+            if parse_mode:
+                try:
+                    data.pop("parse_mode", None)
+                    async with httpx.AsyncClient(timeout=25.0) as client:
+                        retry_res = await client.post(api_url, data=data, files={"document": (filename, file_bytes)})
+                        retry_res.raise_for_status()
+                        return True
+                except Exception:
+                    pass
+
+            raw_err = str(e)
+            token = self.bot_token
+            sanitized_err = raw_err.replace(token, "[REDACTED_BOT_TOKEN]") if token else raw_err
+            logger.error(f"Failed to send Telegram document: {sanitized_err}")
+            return False
 
     async def send_message(self, text: str, parse_mode: Optional[str] = "Markdown") -> bool:
         """Sends an arbitrary message to Telegram, with automatic plain-text retry if markdown parsing fails."""

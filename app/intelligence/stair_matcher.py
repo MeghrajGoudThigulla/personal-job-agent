@@ -318,7 +318,8 @@ class StairMatcher:
     DISQUALIFIED_PRIMARY_STACKS = [
         r"\bjava\b", r"\bspring\s+boot\b", r"\bspring\b", r"\bgolang\b",
         r"\brust\b", r"\bruby\b", r"\bruby\s+on\s+rails\b", r"\brails\b",
-        r"\bphp\b", r"\blaravel\b", r"\bscala\b", r"\bsalesforce\b", r"\bapex\b"
+        r"\bphp\b", r"\blaravel\b", r"\bscala\b", r"\bsalesforce\b", r"\bapex\b",
+        r"\bc\+\+\b", r"\bcpp\b"
     ]
 
     def evaluate_location(self, location: str, description: str, title: str = "") -> Tuple[bool, float, str, str]:

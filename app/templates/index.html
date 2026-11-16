@@ -6,6 +6,9 @@
 
 {% block subnav_actions %}
 <div class="flex items-center space-x-2">
+    <button onclick="toggleLinkedInCard()" class="apple-btn-ghost-pill text-xs py-1.5 px-3">
+        <i class="fa-brands fa-linkedin text-[#0077b5] mr-1.5 text-xs"></i> Daily Post
+    </button>
     <a href="/api/jobs/export/csv" class="apple-btn-ghost-pill text-xs py-1.5 px-3">
         <i class="fa-solid fa-file-csv mr-1.5 text-xs"></i> Export CSV
     </a>
@@ -17,7 +20,7 @@
 
 {% block content %}
 <!-- Apple Metric Stat Grid: 18px radius, hairline borders, soft elevation -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
     <div class="apple-card-glass p-5">
         <div class="flex items-center justify-between text-[#86868b] text-[12px] font-medium tracking-[-0.12px]">
             <span>Discovered Jobs</span>
@@ -42,7 +45,7 @@
             <i class="fa-solid fa-file-lines text-[#2997ff]"></i>
         </div>
         <div class="mt-2 text-3xl font-semibold tracking-[-0.374px] text-[#2997ff]" id="stat-tailored">{{ stats.tailored }}</div>
-        <div class="text-[12px] text-[#86868b] mt-1">LaTeX & anti-slop certified</div>
+        <div class="text-[12px] text-[#86868b] mt-1">7 Variants & anti-slop certified</div>
     </div>
 
     <div class="apple-card-glass p-5">
@@ -52,6 +55,60 @@
         </div>
         <div class="mt-2 text-3xl font-semibold tracking-[-0.374px] text-indigo-300" id="stat-applied">{{ stats.applied }}</div>
         <div class="text-[12px] text-[#86868b] mt-1">Applied & interview tracking</div>
+    </div>
+</div>
+
+<!-- Daily AI LinkedIn Post Feature Card (Apple Glass) -->
+<div id="linkedin-daily-card" class="apple-card-glass p-5 mb-8 border border-[rgba(255,255,255,0.1)]">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-[rgba(255,255,255,0.08)] gap-3">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-[#0077b5]/15 text-[#0077b5] flex items-center justify-center text-lg">
+                <i class="fa-brands fa-linkedin"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h3 class="text-sm font-semibold text-white tracking-[-0.2px]">Daily LinkedIn Post Draft</h3>
+                    <span id="li-status-badge" class="apple-status-chip text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/30">Ready to Publish</span>
+                    <span id="li-date-badge" class="text-[11px] text-[#86868b] font-mono">Today</span>
+                </div>
+                <div class="text-xs text-[#86868b] mt-0.5">
+                    Theme: <span id="li-theme-name" class="text-[#f5f5f7] font-medium">Loading engineering theme...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="copyLinkedInPost()" class="apple-btn-pill text-xs py-1.5 px-3.5">
+                <i class="fa-solid fa-copy mr-1.5 text-[11px]"></i> Copy Post
+            </button>
+            <a id="li-open-link" href="https://www.linkedin.com/feed/" target="_blank" class="apple-btn-pill bg-[#0077b5] hover:bg-[#006097] text-white text-xs py-1.5 px-3.5">
+                <i class="fa-brands fa-linkedin mr-1.5 text-[11px]"></i> Open LinkedIn ↗
+            </a>
+            <button onclick="sendLinkedInTelegram()" id="btn-li-telegram" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1.5 px-3" title="Send copy to Telegram">
+                <i class="fa-brands fa-telegram mr-1 text-[#2997ff] text-[11px]"></i> Telegram
+            </button>
+            <button onclick="regenerateLinkedInPost()" id="btn-li-refresh" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1.5 px-3">
+                <i class="fa-solid fa-rotate mr-1 text-[11px]"></i> New Topic
+            </button>
+        </div>
+    </div>
+
+    <!-- Post Body Display -->
+    <div class="mt-4">
+        <div id="li-loading" class="text-center py-6 text-xs text-[#86868b] hidden">
+            <i class="fa-solid fa-spinner fa-spin text-base text-[#0077b5] mb-2 block"></i> Formulating today's technical engineering post...
+        </div>
+        <div id="li-post-container" class="space-y-3">
+            <div class="bg-[#121214] p-4 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                <pre id="li-post-text" class="text-xs text-[#d2d2d7] whitespace-pre-wrap font-sans leading-relaxed">Loading today's drafted post...</pre>
+            </div>
+            <div class="flex items-center justify-between text-xs text-[#86868b] px-1">
+                <span id="li-hashtags-text" class="text-[#2997ff] text-[11px]">#softwareengineering #python #backend</span>
+                <button onclick="toggleLinkedInStatus()" id="btn-li-toggle-posted" class="hover:text-white transition-colors text-[11px]">
+                    <i class="fa-regular fa-circle-check mr-1"></i> Mark as Published
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -100,53 +157,52 @@
                     <option value="LinkedIn" class="bg-[#272729]">LinkedIn</option>
                     <option value="Indeed" class="bg-[#272729]">Indeed</option>
                     <option value="Glassdoor" class="bg-[#272729]">Glassdoor</option>
-                    <option value="Google Jobs" class="bg-[#272729]">Google Jobs</option>
+                    <option value="Google" class="bg-[#272729]">Google</option>
                     <option value="ZipRecruiter" class="bg-[#272729]">ZipRecruiter</option>
-                    <option value="Ashby" class="bg-[#272729]">Ashby</option>
-                    <option value="Greenhouse" class="bg-[#272729]">Greenhouse</option>
-                    <option value="Lever" class="bg-[#272729]">Lever</option>
-                    <option value="Jobicy" class="bg-[#272729]">Jobicy</option>
-                    <option value="RemoteOK" class="bg-[#272729]">RemoteOK</option>
-                    <option value="SearchDork" class="bg-[#272729]">Search Dorks</option>
+                    <option value="Direct ATS" class="bg-[#272729]">Direct ATS</option>
                 </select>
             </div>
 
-            <!-- Apply Button (Pill) -->
-            <button onclick="applyFilters()" class="apple-btn-pill text-xs py-1.5 px-4">
-                Filter
+            <!-- Reset / Apply Action Buttons -->
+            <button onclick="applyFilters()" class="apple-btn-pill py-1.5 px-4 text-xs font-semibold">
+                Apply Filters
             </button>
+            <a href="/" class="apple-btn-ghost-pill py-1.5 px-3 text-xs">
+                Reset
+            </a>
         </div>
     </div>
 </div>
 
-<!-- Job Cards Feed: Apple Utility Cards (18px radius) -->
-<div id="job-feed" class="space-y-4">
+<!-- Apple Product Tile Grid: Job Postings -->
+<div class="space-y-4" id="jobs-container">
     {% if jobs %}
         {% for job in jobs %}
-        <div class="apple-card hover:border-[#0066cc]/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-5">
-            <div class="flex-1">
-                <div class="flex items-center flex-wrap gap-2 mb-2.5">
+        <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.18)] transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+            
+            <div class="space-y-1.5 flex-1 pr-4">
+                <!-- Meta Capsules -->
+                <div class="flex flex-wrap items-center gap-2 text-xs">
                     <!-- Match Score Capsule -->
-                    <span class="apple-status-chip font-semibold
+                    <span class="apple-status-chip font-bold
                         {% if job.match_score >= 85 %}bg-emerald-950/60 text-emerald-400 border border-emerald-500/30
-                        {% elif job.match_score >= 70 %}bg-blue-950/60 text-[#2997ff] border border-blue-500/30
-                        {% else %}bg-amber-950/60 text-amber-400 border border-amber-500/30{% endif %}">
-                        {{ job.match_score }}% Match • {{ job.match_tier }}
+                        {% elif job.match_score >= 70 %}bg-[#0066cc]/20 text-[#2997ff] border border-[#0066cc]/40
+                        {% else %}bg-amber-950/40 text-amber-300 border border-amber-500/20{% endif %}">
+                        {{ job.match_score }}% Match ({{ job.match_tier }})
                     </span>
 
                     <!-- Source Platform -->
-                    <span class="apple-status-chip bg-[#272729] text-[#d2d2d7] border border-white/10">
+                    <span class="apple-status-chip bg-[#272729] text-[#a1a1a6] border border-white/10">
                         {{ job.source_platform }}
                     </span>
 
-                    <!-- Remote / Location -->
-                    <span class="apple-status-chip bg-[#272729] text-[#a1a1a6] border border-white/5">
-                        <i class="fa-solid fa-location-dot text-[#86868b] mr-1 text-[11px]"></i>{{ job.location }}
+                    <!-- Location Capsule -->
+                    <span class="apple-status-chip bg-[#272729] text-[#a1a1a6] border border-white/10">
+                        <i class="fa-solid fa-location-dot mr-1 text-[10px]"></i> {{ job.location }}
                     </span>
 
-                    <!-- Posted Date -->
-                    <span class="apple-status-chip bg-[#272729] text-[#a1a1a6] border border-white/5">
-                        <i class="fa-regular fa-clock text-[#86868b] mr-1 text-[11px]"></i>
+                    <!-- Time Capsule -->
+                    <span class="text-[#86868b] text-[12px] font-normal">
                         {% if job.posted_at_ist %}{{ job.posted_at_ist[:16] }}
                         {% elif job.posted_date %}{{ job.posted_date }}
                         {% else %}Recent{% endif %}
@@ -213,6 +269,8 @@
 
 {% block scripts %}
 <script>
+    let currentLinkedInPost = null;
+
     function applyFilters() {
         const search = document.getElementById('filter-search').value;
         const score = document.getElementById('filter-score').value;
@@ -234,5 +292,124 @@
 
         window.location.href = `/?${params.toString()}`;
     }
+
+    function toggleLinkedInCard() {
+        const card = document.getElementById('linkedin-daily-card');
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    async function loadDailyLinkedInPost() {
+        const loader = document.getElementById('li-loading');
+        const container = document.getElementById('li-post-container');
+        try {
+            const res = await fetch('/api/linkedin/today');
+            if (res.ok) {
+                const data = await res.json();
+                currentLinkedInPost = data;
+                renderLinkedInPost(data);
+            }
+        } catch (e) {
+            console.error('Failed to load daily LinkedIn post:', e);
+        }
+    }
+
+    function renderLinkedInPost(data) {
+        document.getElementById('li-theme-name').innerText = data.theme || 'Engineering Insight';
+        document.getElementById('li-date-badge').innerText = data.post_date || 'Today';
+        document.getElementById('li-post-text').innerText = data.content || '';
+        document.getElementById('li-hashtags-text').innerText = data.hashtags || '';
+
+        const badge = document.getElementById('li-status-badge');
+        const toggleBtn = document.getElementById('btn-li-toggle-posted');
+        if (data.posted) {
+            badge.className = 'apple-status-chip text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+            badge.innerText = 'Published';
+            toggleBtn.innerHTML = '<i class="fa-solid fa-rotate-left mr-1"></i> Mark as Draft';
+        } else {
+            badge.className = 'apple-status-chip text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/30';
+            badge.innerText = 'Ready to Publish';
+            toggleBtn.innerHTML = '<i class="fa-regular fa-circle-check mr-1"></i> Mark as Published';
+        }
+    }
+
+    function copyLinkedInPost() {
+        const text = document.getElementById('li-post-text')?.innerText || '';
+        if (text) {
+            navigator.clipboard.writeText(text);
+            alert('✨ Copied today\'s LinkedIn post to clipboard!');
+        }
+    }
+
+    async function regenerateLinkedInPost() {
+        const btn = document.getElementById('btn-li-refresh');
+        if (btn) btn.disabled = true;
+        const loader = document.getElementById('li-loading');
+        const container = document.getElementById('li-post-container');
+        if (loader) loader.classList.remove('hidden');
+        if (container) container.classList.add('hidden');
+
+        try {
+            const res = await fetch('/api/linkedin/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ send_telegram: false })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                currentLinkedInPost = data;
+                renderLinkedInPost(data);
+            } else {
+                alert('Failed to regenerate post.');
+            }
+        } catch (e) {
+            alert('Error: ' + e);
+        } finally {
+            if (loader) loader.classList.add('hidden');
+            if (container) container.classList.remove('hidden');
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async function sendLinkedInTelegram() {
+        if (!currentLinkedInPost || !currentLinkedInPost.id) {
+            alert('No active post to send.');
+            return;
+        }
+        try {
+            const res = await fetch(`/api/linkedin/posts/${currentLinkedInPost.id}/send-telegram`, { method: 'POST' });
+            if (res.ok) {
+                alert('📱 Sent today\'s LinkedIn post draft to Telegram!');
+            } else {
+                alert('Failed to send to Telegram.');
+            }
+        } catch (e) {
+            alert('Error: ' + e);
+        }
+    }
+
+    async function toggleLinkedInStatus() {
+        if (!currentLinkedInPost || !currentLinkedInPost.id) return;
+        const newStatus = !currentLinkedInPost.posted;
+        try {
+            const res = await fetch(`/api/linkedin/posts/${currentLinkedInPost.id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ posted: newStatus })
+            });
+            if (res.ok) {
+                currentLinkedInPost.posted = newStatus;
+                renderLinkedInPost(currentLinkedInPost);
+            }
+        } catch (e) {
+            alert('Error updating status: ' + e);
+        }
+    }
+
+    // Auto-load on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDailyLinkedInPost();
+    });
 </script>
 {% endblock %}

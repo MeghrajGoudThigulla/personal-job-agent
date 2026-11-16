@@ -92,6 +92,9 @@ class JobPosting(Base):
             "interview_rounds": rounds_list,
             "has_tailored_application": has_app
         }
+        if has_app and getattr(self, "application", None):
+            data["pdf_path"] = self.application.pdf_path
+            data["tailored_tex"] = self.application.tailored_resume_tex
         if include_description:
             data["description"] = self.__dict__.get("description", getattr(self, "description", "")) or ""
         return data
@@ -237,4 +240,34 @@ class SeenEmail(Base):
             "subject": self.subject,
             "category": self.category,
             "notified_at": self.notified_at.isoformat() if self.notified_at else None,
+        }
+
+
+class LinkedInPost(Base):
+    __tablename__ = "linkedin_posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_date = Column(String(50), unique=True, index=True, nullable=False)  # e.g. "2026-11-16"
+    theme = Column(String(255), nullable=False)
+    hook = Column(String(512), nullable=False)
+    content = Column(Text, nullable=False)
+    hashtags = Column(String(255), default="")
+    call_to_action = Column(String(255), default="")
+    posted = Column(Boolean, default=False, nullable=False)
+    notified_telegram = Column(Boolean, default=False, nullable=False)
+    created_at = Column(UTCDateTime, default=utcnow, nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "post_date": self.post_date,
+            "theme": self.theme,
+            "hook": self.hook,
+            "content": self.content,
+            "hashtags": self.hashtags,
+            "call_to_action": self.call_to_action,
+            "posted": bool(self.posted),
+            "notified_telegram": bool(self.notified_telegram),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at_ist": format_ist(self.created_at) if self.created_at else None,
         }

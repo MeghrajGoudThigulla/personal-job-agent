@@ -244,7 +244,7 @@ class PDFCompiler:
 
     <div class="section-title">Technical Skills</div>
     <table class="skills-table">
-        <tr><td class="skills-label">Languages:</td><td>C#, Python, Dart, JavaScript, TypeScript, C++, SQL</td></tr>
+        <tr><td class="skills-label">Languages:</td><td>C#, Python, Dart, JavaScript, TypeScript, SQL</td></tr>
         <tr><td class="skills-label">Backend:</td><td>FastAPI, ASP.NET Core, .NET 8, MediatR, SignalR, Celery, SQLAlchemy, Alembic, Prisma</td></tr>
         <tr><td class="skills-label">Frontend & Mobile:</td><td>Flutter, React, Next.js, HTML5, CSS3, Tailwind CSS</td></tr>
         <tr><td class="skills-label">Databases:</td><td>PostgreSQL, Redis, SQL Server, SQLite, Supabase, Firebase</td></tr>

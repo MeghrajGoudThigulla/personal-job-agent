@@ -33,162 +33,134 @@
   ],
   "skills": {
     "primary": [
-      "python", "fastapi", "flask", "c#", ".net", ".net 8", "asp.net",
-      "asp.net core", "flutter", "react", "next.js", "nextjs", "typescript"
+      "python", "fastapi", "flask", "c#", ".net", "flutter", "react", "next.js", "nextjs", "typescript"
     ],
     "specialized": [
       "postgresql", "postgres", "redis", "docker", "celery", "prisma", "alembic",
-      "signalr", "mediatr", "clean architecture", "cqrs", "onnx", "ocr", "paddleocr",
-      "embeddings", "rag", "supabase"
+      "sql server", "paddleocr", "embeddings", "bge-m3", "onnx", "supabase", "weasyprint"
     ],
     "generic": [
-      "sql", "rest", "api", "aws", "gcp", "render", "linux", "git", "websockets"
+      "sql", "rest", "api", "aws", "gcp", "render", "linux", "git", "websockets", "nginx", "systemd"
     ],
     "languages": [
       "Python",
-      "C#",
       "Dart",
       "JavaScript",
       "TypeScript",
-      "SQL",
-      "C++"
+      "C#",
+      "SQL"
     ],
     "backend": [
       "FastAPI",
       "Flask",
-      "ASP.NET Core",
-      ".NET 8",
-      "Entity Framework Core",
-      "MediatR",
-      "SignalR",
+      "Express",
       "Celery",
       "SQLAlchemy",
       "Alembic",
       "Prisma",
-      "Express",
-      "Node.js"
+      ".NET"
     ],
     "frontend_mobile": [
-      "Flutter",
       "React",
       "Next.js",
-      "HTML5",
-      "CSS3",
       "Tailwind CSS",
       "MUI",
+      "Flutter",
       "Riverpod",
-      "GoRouter"
+      "GoRouter",
+      "Firebase",
+      "Google Maps SDK"
     ],
     "databases": [
       "PostgreSQL",
-      "Redis",
-      "SQL Server",
-      "SQLite",
       "MySQL",
       "MongoDB",
-      "Supabase",
-      "Firebase",
-      "Firestore"
+      "Redis",
+      "Firestore",
+      "Supabase"
     ],
     "architecture": [
-      "Clean Architecture",
-      "CQRS",
       "REST APIs",
-      "RBAC",
       "JWT",
-      "Transactional Outbox",
-      "Optimistic Concurrency",
-      "Rate Limiting",
-      "Caching",
-      "Row-Level Security (RLS)"
+      "RBAC",
+      "Row-Level Security",
+      "Webhooks",
+      "WebSockets",
+      "Rate Limiting"
     ],
     "ai_ml": [
-      "ONNX Runtime",
-      "PaddleOCR",
-      "PyTesseract",
-      "Sentence Transformers",
-      "Embeddings",
-      "Model Gateway Services",
-      "RAG",
-      "LLM Integration"
+      "PaddleOCR (ONNX Runtime)",
+      "BGE-M3 embeddings",
+      "sentence-transformers",
+      "RapidFuzz"
     ],
     "devops": [
       "Docker",
-      "Docker Compose",
-      "GitHub Actions",
-      "Render",
       "AWS EC2",
+      "GitHub Actions",
       "nginx",
-      "Linux",
-      "Git",
-      "xUnit",
-      "NetArchTest"
+      "systemd",
+      "Git"
     ]
   },
   "experience": [
     {
       "company": "Threshing Floor Group",
       "website": "https://tfgroup.ai/en",
-      "title": "Senior AI Developer & Full Stack Engineer",
-      "period": "July 2024 - Oct 2026",
+      "roles": [
+        {
+          "title": "Full Stack Engineer & Senior AI Developer",
+          "period": "July 2024 - October 2026"
+        }
+      ],
       "location": "Hyderabad, India",
-      "bullets": [
-        "Delivered backend infrastructure of 286 endpoints, 61+ database models, and 30+ Alembic/Prisma migrations across multiple production products, owning schema design end to end.",
-        "Shipped 80+ mobile screens and 96+ web interfaces with Flutter, React, and Next.js on FastAPI backends, partnering with design and product to deliver on schedule.",
-        "Owned App Store / Play Store releases and deployment pipelines for 4+ Flutter apps (Employee Portal, HRMS, LMS, Care Navigator).",
-        "Engineered PostgreSQL/Supabase data layers with Row-Level Security, Redis rate limiting, Celery webhook workers, and dual-store WebSocket sync.",
-        "Deployed ML pipelines (OCR, embeddings) and third-party provider APIs into production FastAPI services.",
-        "Partnered with executive stakeholders as technical consultant, converting ambiguous requirements into shippable milestones; directed knowledge transfer for 8 engineers."
+      "outcomes": [
+        "Live on Google Play and App Store: IYOV AI Employee, Jobs, LMS, HRMS (Android + iOS); Medical Advisor and TFG SecureBanking on Google Play.",
+        "Prepared Android and iOS release builds and store submissions for 6 apps per platform, typically under one hour per platform, excluding store review.",
+        "Deployed 50-100 applications to AWS EC2 (new rollouts and production updates), typically under 30 minutes each.",
+        "Built the OCR and document-verification pipeline on PaddleOCR (ONNX Runtime), a 64-type document taxonomy and BGE-M3 embeddings; about 8 documents per minute, with an estimated 75% reduction in manual verification work.",
+        "Built the India statutory payroll engine (PF, ESI, TDS, professional tax) for IYOV AI, eliminating manual calculation steps for an internal eight-employee payroll workflow.",
+        "Mentored 8 engineers through codebase walkthroughs, architecture explanations and code reviews; acted as technical consultant to stakeholders, turning ambiguous requirements into delivery milestones.",
+        "Contributed to raising backend pytest coverage from 43% to 73.4%.",
+        "Maintained GitHub Actions workflows and Docker configurations for backend deployment, staging and canary releases."
       ]
     }
   ],
-  "projects": [
+  "products": [
     {
-      "name": "TalentFlow",
-      "subtitle": "Enterprise Applicant Tracking System & Pipeline",
-      "demo_url": "https://talentflow-6tgp.onrender.com",
-      "github_url": "https://github.com/MeghrajGoudThigulla/TalentFlow",
-      "tech": [
-        "C#",
-        ".NET 8",
-        "ASP.NET Core",
-        "EF Core",
-        "SQL Server",
-        "MediatR",
-        "SignalR",
-        "Docker",
-        "Serilog",
-        "NetArchTest",
-        "xUnit"
-      ],
-      "bullets": [
-        "Architected a .NET 8 Web API with Clean Architecture and CQRS (MediatR), enforcing pipeline behaviors (Validation -> Logging -> Transaction -> Audit); achieved 73.4% test coverage across 90 automated tests (xUnit, NetArchTest, WebApplicationFactory).",
-        "Implemented the Transactional Outbox Pattern with SQL Server atomic table claims (UPDLOCK, READPAST), exponential backoff, and deduplication keys, guaranteeing at-least-once candidate email delivery via MailKit.",
-        "Designed RowVersion optimistic concurrency control resolving concurrent card movements with HTTP 409 Conflict; broadcast zero-latency Kanban pipeline updates across recruiter sessions via authenticated SignalR WebSocket groups.",
-        "Hardened application security against OWASP API Top 10: resource-based authorization (IDOR prevention on candidate evaluations), fixed-window rate limiting, magic-byte file signature validation on CVs, and request correlation IDs with Serilog.",
-        "Containerized multi-service stack with Docker Compose (API, SQL Server 2022, MailHog) and automated CI/CD via GitHub Actions with automated coverage gates, zero compiler warnings (-warnaserror), and continuous deployment to Render."
-      ]
+      "name": "TFG Verify",
+      "category": "BGV / KYC platform",
+      "description": "FastAPI services with 206 API routes, 58 SQLAlchemy models and 25 Alembic migrations; Celery/Redis workers, signed webhooks and Row-Level Security."
     },
     {
-      "name": "IYOV AI",
-      "subtitle": "AI-Powered Workforce Management Ecosystem",
-      "demo_url": "https://iyov.ai/",
-      "tech": [
-        "Python",
-        "FastAPI",
-        "Flutter",
-        "Riverpod",
-        "GoRouter",
-        "Next.js",
-        "PostgreSQL",
-        "Redis",
-        "Firebase"
-      ],
-      "bullets": [
-        "Owned the India tax and compliance payroll module from scratch, translating complex statutory rules into automated payroll formulas.",
-        "Engineered multi-channel workforce management with real-time biometric and geo-fenced attendance APIs serving high concurrent loads.",
-        "Integrated ML pipelines for automated invoice and document OCR extraction with PaddleOCR and ONNX runtime."
-      ]
+      "name": "TFG SecureBanking",
+      "category": "Digital lending",
+      "description": "Multi-tenant FastAPI backend with 174 REST endpoints, an Excel-driven credit rules engine (openpyxl, xlcalculator) and WeasyPrint sanction-letter PDFs."
+    },
+    {
+      "name": "DealsMart",
+      "category": "E-commerce (pre-release)",
+      "description": "Backend with 152 API routes, 92 SQLAlchemy models and 40 migrations; cart and checkout services, Razorpay webhook deduplication, idempotent refunds and eight RQ background jobs."
+    },
+    {
+      "name": "Medical Advisor (Healthcare)",
+      "category": "FastAPI Backend",
+      "description": "FastAPI backend with 230 API routes (including WebSockets) and 47 migrations; JWT auth, Google Play Integrity nonce checks and PostgreSQL-to-Firestore sync for emergency workflows."
+    },
+    {
+      "name": "Medical Advisor (Mobile & Admin)",
+      "category": "Mobile & Web",
+      "description": "Flutter app with 195 screen-directory files, Android release configuration (com.tfg.medicaladvisor, v1.0.1) and a Flutter Web admin console."
+    },
+    {
+      "name": "TFG Corporate Website",
+      "category": "Next.js Rebuild",
+      "description": "11 App Router page routes across 6 locales, 17 permanent legacy redirects and an AI careers application flow; nginx reverse proxy and systemd deployment with rollback scripts."
+    },
+    {
+      "name": "IYOV AI Assessments and Job Portal",
+      "category": "Assessment Platform",
+      "description": "Coding-assessment engine on the Piston execution sandbox (timeouts, fullscreen and tab-switch detection, dynamic risk scoring, daily attempt limits) and the candidate Job Portal."
     }
   ],
   "target_priorities": {

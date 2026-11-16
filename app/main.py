@@ -24,6 +24,7 @@ from app.api.routes_analytics import router as analytics_router
 from app.api.routes_mcp import router as mcp_router
 from app.api.routes_security import router as security_router
 from app.api.routes_telemetry import router as telemetry_router
+from app.api.routes_linkedin import router as linkedin_router
 from app.config import settings
 
 
@@ -98,6 +99,7 @@ app.include_router(analytics_router)
 app.include_router(mcp_router)
 app.include_router(security_router)
 app.include_router(telemetry_router)
+app.include_router(linkedin_router)
 
 
 
