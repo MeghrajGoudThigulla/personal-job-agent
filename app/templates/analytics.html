@@ -187,4 +187,58 @@
         </div>
     </div>
 </div>
+
+<!-- Market Skill Gaps & Upskilling Opportunities -->
+<div class="mt-6 bg-slate-900/80 border border-slate-800 rounded-xl p-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800/80 mb-4 gap-2">
+        <div>
+            <h2 class="text-sm font-bold text-white flex items-center">
+                <i class="fa-solid fa-lightbulb text-yellow-400 mr-2"></i> Highest-ROI Skills to Learn Next (Market Demand Gaps)
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Frequent technology requirements in high-match postings absent from your current core stack, paired with concrete bridging projects.</p>
+        </div>
+        <span class="text-[11px] px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold self-start sm:self-auto">
+            Dynamic STAIR Aggregation
+        </span>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+            <thead>
+                <tr class="border-b border-slate-800 text-slate-400 font-semibold pb-2">
+                    <th class="pb-2">Target Skill / Tool</th>
+                    <th class="pb-2">Domain Category</th>
+                    <th class="pb-2 text-right">Job Mentions</th>
+                    <th class="pb-2 text-right">Prevalence</th>
+                    <th class="pb-2">Adjacent Bridge</th>
+                    <th class="pb-2">Quick PoC Project</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+                {% if market_gaps %}
+                    {% for g in market_gaps %}
+                    <tr class="hover:bg-slate-800/30">
+                        <td class="py-3 font-bold text-white flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-yellow-400 mr-2 inline-block"></span>
+                            {{ g.skill }}
+                        </td>
+                        <td class="py-3 text-slate-400">{{ g.category }}</td>
+                        <td class="py-3 text-right text-indigo-400 font-mono font-bold">{{ g.demand_count }}</td>
+                        <td class="py-3 text-right text-emerald-400 font-mono font-semibold">{{ g.prevalence_pct }}%</td>
+                        <td class="py-3 text-slate-300">{{ g.adjacent_skill }}</td>
+                        <td class="py-3 text-slate-400 italic">{{ g.quick_poc }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="py-6 text-center text-slate-500">
+                            No market skill gaps detected across qualified postings yet. Run discovery sweeps to aggregate tech market demands.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}
+

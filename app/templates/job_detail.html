@@ -114,7 +114,11 @@
     <button onclick="switchTab('prep')" id="tab-btn-prep" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
         <i class="fa-solid fa-graduation-cap mr-1.5"></i> Interview Prep Pack
     </button>
+    <button onclick="switchTab('skillgap')" id="tab-btn-skillgap" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-lightbulb mr-1.5"></i> Skill Gaps & Bridges
+    </button>
     <button onclick="switchTab('outreach')" id="tab-btn-outreach" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+
         <i class="fa-solid fa-envelope-open-text mr-1.5"></i> Cold Emails & 4MM
     </button>
     <button onclick="switchTab('desc')" id="tab-btn-desc" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
@@ -308,6 +312,29 @@
     </div>
 </div>
 
+<!-- TAB 6: SKILL GAP & BRIDGES -->
+<div id="tab-content-skillgap" class="space-y-4 hidden">
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+            <div>
+                <h3 class="text-sm font-bold text-white flex items-center">
+                    <i class="fa-solid fa-lightbulb text-yellow-400 mr-2"></i> Skill Gap Analysis & Bridging Strategies
+                </h3>
+                <span class="text-xs text-slate-400">Identifies missing requirements in this posting and provides adjacent architectural bridges</span>
+            </div>
+            <button onclick="loadSkillGap(true)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
+                <i class="fa-solid fa-rotate mr-1"></i> Refresh
+            </button>
+        </div>
+        <div id="skill-gap-loading" class="text-center py-8 text-xs text-slate-400 hidden">
+            <i class="fa-solid fa-spinner fa-spin text-lg text-yellow-400 mb-2 block"></i> Analyzing tech requirements against your profile...
+        </div>
+        <div id="skill-gap-display" class="space-y-3">
+            <div class="text-xs text-slate-400 py-4 text-center">Loading skill gap insights...</div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -315,17 +342,20 @@
     const CURRENT_JOB_ID = "{{ job.id }}";
     let coverLetterLoaded = false;
     let interviewPrepLoaded = false;
+    let skillGapLoaded = false;
 
     function switchTab(tab) {
         document.getElementById('tab-content-resume').classList.add('hidden');
         document.getElementById('tab-content-coverletter').classList.add('hidden');
         document.getElementById('tab-content-prep').classList.add('hidden');
+        document.getElementById('tab-content-skillgap').classList.add('hidden');
         document.getElementById('tab-content-outreach').classList.add('hidden');
         document.getElementById('tab-content-desc').classList.add('hidden');
 
         document.getElementById('tab-btn-resume').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
         document.getElementById('tab-btn-coverletter').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
         document.getElementById('tab-btn-prep').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+        document.getElementById('tab-btn-skillgap').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
         document.getElementById('tab-btn-outreach').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
         document.getElementById('tab-btn-desc').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
 
@@ -340,6 +370,10 @@
             document.getElementById('tab-content-prep').classList.remove('hidden');
             document.getElementById('tab-btn-prep').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
             if (!interviewPrepLoaded) loadInterviewPrep();
+        } else if (tab === 'skillgap') {
+            document.getElementById('tab-content-skillgap').classList.remove('hidden');
+            document.getElementById('tab-btn-skillgap').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+            if (!skillGapLoaded) loadSkillGap();
         } else if (tab === 'outreach') {
             document.getElementById('tab-content-outreach').classList.remove('hidden');
             document.getElementById('tab-btn-outreach').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
@@ -348,6 +382,7 @@
             document.getElementById('tab-btn-desc').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
         }
     }
+
 
     async function loadCoverLetter(force = false) {
         const textEl = document.getElementById('text-cover-letter');
@@ -395,18 +430,79 @@
         }
     }
 
+    async function loadSkillGap(force = false) {
+        const displayEl = document.getElementById('skill-gap-display');
+        const loader = document.getElementById('skill-gap-loading');
+        if (loader) loader.classList.remove('hidden');
+        if (displayEl) displayEl.classList.add('hidden');
 
-        if (tab === 'resume') {
-            document.getElementById('tab-content-resume').classList.remove('hidden');
-            document.getElementById('tab-btn-resume').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
-        } else if (tab === 'outreach') {
-            document.getElementById('tab-content-outreach').classList.remove('hidden');
-            document.getElementById('tab-btn-outreach').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
-        } else if (tab === 'desc') {
-            document.getElementById('tab-content-desc').classList.remove('hidden');
-            document.getElementById('tab-btn-desc').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
+        try {
+            const res = await fetch(`/api/jobs/${CURRENT_JOB_ID}/skill-gap`);
+            if (res.ok) {
+                const data = await res.json();
+                skillGapLoaded = true;
+
+                if (!data.gaps || data.gaps.length === 0) {
+                    displayEl.innerHTML = `
+                        <div class="p-6 text-center bg-slate-950 rounded-lg border border-emerald-500/30">
+                            <i class="fa-solid fa-circle-check text-2xl text-emerald-400 mb-2"></i>
+                            <div class="text-sm font-bold text-white">Full Stack Alignment!</div>
+                            <div class="text-xs text-slate-400 mt-1">No significant technology gaps were found between your core competencies and this job posting.</div>
+                        </div>
+                    `;
+                } else {
+                    let html = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+                            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+                                <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider mb-1">Matched Stack (${data.total_matched})</div>
+                                <div class="flex flex-wrap gap-1">
+                                    ${(data.matched_skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[11px] font-medium">✓ ${s}</span>`).join('')}
+                                </div>
+                            </div>
+                            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+                                <div class="text-[11px] font-semibold text-yellow-400 uppercase tracking-wider mb-1">Identified Gaps (${data.total_gaps})</div>
+                                <div class="flex flex-wrap gap-1">
+                                    ${(data.gaps || []).map(g => `<span class="px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 text-[11px] font-medium">${g.skill}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-3 mt-4">
+                    `;
+
+                    for (const gap of data.gaps) {
+                        html += `
+                            <div class="bg-slate-950 p-4 rounded-lg border border-slate-800/90 hover:border-slate-700 transition-colors">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-bold text-white text-xs flex items-center">
+                                        <i class="fa-solid fa-triangle-exclamation text-yellow-400 mr-2"></i> ${gap.skill}
+                                        <span class="ml-2 text-[10px] text-slate-400 font-normal">(${gap.category})</span>
+                                    </span>
+                                    <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                        Adjacent: ${gap.adjacent_skill}
+                                    </span>
+                                </div>
+                                <div class="text-xs text-slate-300 space-y-1.5">
+                                    <p><strong class="text-slate-400">Bridging Strategy:</strong> ${gap.bridging_talking_point}</p>
+                                    <p><strong class="text-slate-400">Proof of Concept:</strong> <span class="italic text-slate-300">${gap.quick_poc}</span></p>
+                                    <p><strong class="text-slate-400">Interview Focus:</strong> ${gap.interview_focus}</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    html += `</div>`;
+                    displayEl.innerHTML = html;
+                }
+            } else {
+                displayEl.innerHTML = `<div class="text-xs text-rose-400 py-4 text-center">Failed to load skill gap analysis.</div>`;
+            }
+        } catch (e) {
+            displayEl.innerHTML = `<div class="text-xs text-rose-400 py-4 text-center">Error: ${e}</div>`;
+        } finally {
+            if (loader) loader.classList.add('hidden');
+            if (displayEl) displayEl.classList.remove('hidden');
         }
     }
+
 
     async function tailorNow(targetJobId = null) {
         const jobId = targetJobId || CURRENT_JOB_ID;

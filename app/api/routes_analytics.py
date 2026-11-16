@@ -5,6 +5,7 @@ Provides high-level pipeline funnel tracking and source-by-source conversion sta
 
 from __future__ import annotations
 
+import json
 from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
@@ -13,10 +14,12 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.models import JobPosting
+from app.intelligence.skill_gap import SkillGapDetector
 
 templates = Jinja2Templates(directory="app/templates")
 
 router = APIRouter(tags=["Analytics"])
+
 
 
 @router.get("/api/analytics/funnel")
@@ -117,9 +120,30 @@ async def get_analytics_funnel(db: AsyncSession = Depends(get_db)) -> Dict[str, 
     }
 
 
+@router.get("/api/analytics/skill-gaps")
+async def get_market_skill_gaps(db: AsyncSession = Depends(get_db)) -> List[Dict[str, Any]]:
+    """
+    Returns market-wide missing skill frequencies and high-ROI upskilling recommendations.
+    """
+    stmt = select(JobPosting.match_reason).where(JobPosting.match_score >= 50.0)
+    res = await db.execute(stmt)
+    meta_list = []
+    for (m_reason,) in res.all():
+        if m_reason:
+            try:
+                data = json.loads(m_reason) if isinstance(m_reason, str) else m_reason
+                meta_list.append(data)
+            except Exception:
+                pass
+
+    detector = SkillGapDetector()
+    return detector.aggregate_market_gaps(meta_list)
+
+
 @router.get("/analytics", response_class=HTMLResponse)
 async def analytics_page(request: Request, db: AsyncSession = Depends(get_db)):
     data = await get_analytics_funnel(db)
+    market_gaps = await get_market_skill_gaps(db)
     return templates.TemplateResponse(
         request=request,
         name="analytics.html",
@@ -128,7 +152,9 @@ async def analytics_page(request: Request, db: AsyncSession = Depends(get_db)):
             "rates": data["rates"],
             "sources": data["sources"],
             "categories": data["categories"],
+            "market_gaps": market_gaps,
             "csrf_token": getattr(request.state, "csrf_token", ""),
         }
     )
+
 

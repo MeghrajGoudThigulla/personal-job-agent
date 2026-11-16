@@ -11,8 +11,10 @@ from app.core.database import get_db
 from app.core.models import JobPosting, TailoredApplication
 from app.intelligence.cover_letter import CoverLetterGenerator
 from app.intelligence.interview_prep import InterviewPrepGenerator
+from app.intelligence.skill_gap import SkillGapDetector
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
+
 
 
 @router.get("")
@@ -178,6 +180,33 @@ async def get_job_cover_letter(job_id: int, db: AsyncSession = Depends(get_db)):
         matched_skills=matched_skills
     )
     return {"job_id": job.id, "company": job.company, "title": job.title, "cover_letter": letter_text}
+
+@router.get("/{job_id}/skill-gap")
+async def get_job_skill_gap(job_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(JobPosting).where(JobPosting.id == job_id))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    matched_skills = []
+    missing_skills = []
+    if job.match_reason:
+        try:
+            m_data = json.loads(job.match_reason) if isinstance(job.match_reason, str) else job.match_reason
+            matched_skills = m_data.get("matched_skills", [])
+            missing_skills = m_data.get("missing_skills", [])
+        except Exception:
+            pass
+
+    detector = SkillGapDetector()
+    analysis = detector.analyze_job(
+        job_title=job.title,
+        description=job.description or "",
+        matched_skills=matched_skills,
+        missing_skills=missing_skills
+    )
+    return {"job_id": job.id, "company": job.company, **analysis}
+
 
 
 @router.patch("/{job_id}/status")
