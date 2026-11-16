@@ -16,6 +16,7 @@ from app.intelligence.stair_matcher import StairMatcher
 from app.intelligence.resume_tailor import ResumeTailor
 from app.intelligence.outreach_generator import OutreachGenerator
 from app.intelligence.pdf_compiler import PDFCompiler
+from app.intelligence.liveness import posting_is_closed
 from app.notifiers.dispatcher import NotificationDispatcher
 from app.scrapers.base import parse_posted_date
 from app.scrapers.direct_ats import DirectATSScraper
@@ -255,6 +256,23 @@ class ScraperEngine:
 
             for hm in pending_jobs:
                 job_id = hm["job_id"]
+                job_url = hm["url"]
+
+                # Fast liveness pre-check: prune closed postings before alerting or tailoring
+                if await posting_is_closed(job_url):
+                    logger.info(
+                        f"Skipping notification/tailoring for job {job_id} ({hm['title']} at {hm['company']}): "
+                        f"posting is closed on ATS."
+                    )
+                    async with async_session_factory() as session:
+                        j = await session.get(JobPosting, job_id)
+                        if j:
+                            j.status = "closed"
+                            j.notified = True
+                            j.last_error = "Posting closed on ATS (liveness check)"
+                            await session.commit()
+                    continue
+
                 alert_payload = hm["job_dict"]
                 alert_payload["matched_skills"] = hm["eval_res"].get("matched_skills", [])
 
