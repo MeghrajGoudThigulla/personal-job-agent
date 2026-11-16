@@ -1,201 +1,209 @@
 {% extends "base.html" %}
 
 {% block title %}Dashboard | Personal Job Agent{% endblock %}
+{% block page_title %}Job Feed{% endblock %}
+{% block page_subtitle %}Autonomous STAIR Matching & Intelligence{% endblock %}
+
+{% block subnav_actions %}
+<div class="flex items-center space-x-2">
+    <a href="/api/jobs/export/csv" class="apple-btn-ghost-pill text-xs py-1.5 px-3">
+        <i class="fa-solid fa-file-csv mr-1.5 text-xs"></i> Export CSV
+    </a>
+    <button onclick="triggerScraper('all')" id="btn-scrape-all" class="apple-btn-pill text-xs py-1.5 px-3.5">
+        <i class="fa-solid fa-arrows-rotate mr-1.5 text-xs" id="scrape-icon"></i> Run Scrapers
+    </button>
+</div>
+{% endblock %}
 
 {% block content %}
-<!-- Metric Stat Cards -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+<!-- Apple Metric Stat Grid: 18px radius, hairline borders, soft elevation -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="apple-card-glass p-5">
+        <div class="flex items-center justify-between text-[#86868b] text-[12px] font-medium tracking-[-0.12px]">
             <span>Discovered Jobs</span>
-            <i class="fa-solid fa-layer-group text-slate-500"></i>
+            <i class="fa-solid fa-layer-group text-[#a1a1a6]"></i>
         </div>
-        <div class="mt-2 text-2xl font-bold text-white" id="stat-total">{{ stats.total_jobs }}</div>
-        <div class="text-[11px] text-slate-500 mt-1">From ATS APIs, Remote feeds, Dorks</div>
+        <div class="mt-2 text-3xl font-semibold tracking-[-0.374px] text-white" id="stat-total">{{ stats.total_jobs }}</div>
+        <div class="text-[12px] text-[#86868b] mt-1">Multi-board & direct ATS feeds</div>
     </div>
 
-    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+    <div class="apple-card-glass p-5">
+        <div class="flex items-center justify-between text-emerald-400 text-[12px] font-medium tracking-[-0.12px]">
             <span>High Matches (≥70%)</span>
-            <i class="fa-solid fa-bullseye text-emerald-500"></i>
+            <i class="fa-solid fa-bullseye text-emerald-400"></i>
         </div>
-        <div class="mt-2 text-2xl font-bold text-emerald-400" id="stat-high">{{ stats.high_match }}</div>
-        <div class="text-[11px] text-slate-500 mt-1">STAIR-verified roles</div>
+        <div class="mt-2 text-3xl font-semibold tracking-[-0.374px] text-emerald-400" id="stat-high">{{ stats.high_match }}</div>
+        <div class="text-[12px] text-[#86868b] mt-1">STAIR-verified engineering roles</div>
     </div>
 
-    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between text-blue-400 text-xs font-semibold uppercase tracking-wider">
+    <div class="apple-card-glass p-5">
+        <div class="flex items-center justify-between text-[#2997ff] text-[12px] font-medium tracking-[-0.12px]">
             <span>Tailored Resumes</span>
-            <i class="fa-solid fa-file-pen text-blue-500"></i>
+            <i class="fa-solid fa-file-lines text-[#2997ff]"></i>
         </div>
-        <div class="mt-2 text-2xl font-bold text-blue-400" id="stat-tailored">{{ stats.tailored }}</div>
-        <div class="text-[11px] text-slate-500 mt-1">LaTeX & Anti-slop certified</div>
+        <div class="mt-2 text-3xl font-semibold tracking-[-0.374px] text-[#2997ff]" id="stat-tailored">{{ stats.tailored }}</div>
+        <div class="text-[12px] text-[#86868b] mt-1">LaTeX & anti-slop certified</div>
     </div>
 
-    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between text-indigo-400 text-xs font-semibold uppercase tracking-wider">
-            <span>Applied</span>
-            <i class="fa-solid fa-paper-plane text-indigo-500"></i>
+    <div class="apple-card-glass p-5">
+        <div class="flex items-center justify-between text-indigo-400 text-[12px] font-medium tracking-[-0.12px]">
+            <span>Active in Pipeline</span>
+            <i class="fa-solid fa-paper-plane text-indigo-400"></i>
         </div>
-        <div class="mt-2 text-2xl font-bold text-indigo-400" id="stat-applied">{{ stats.applied }}</div>
-        <div class="text-[11px] text-slate-500 mt-1">Outreach sent / Submitted</div>
+        <div class="mt-2 text-3xl font-semibold tracking-[-0.374px] text-indigo-300" id="stat-applied">{{ stats.applied }}</div>
+        <div class="text-[12px] text-[#86868b] mt-1">Applied & interview tracking</div>
     </div>
 </div>
 
-<!-- Filters and Controls -->
-<div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 mb-6 shadow-sm">
+<!-- Apple Glass Filter Strip -->
+<div class="apple-card-glass p-4 mb-8">
     <div class="flex flex-col lg:flex-row gap-4 items-center justify-between">
-        <!-- Search -->
-        <div class="w-full lg:w-1/3 relative">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-            <input type="text" id="filter-search" placeholder="Search title, company, skills (Python, FastAPI, Flutter)..." 
-                class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors">
+        <!-- Apple Pill Search Input (9999px radius, height 42px) -->
+        <div class="w-full lg:w-2/5 relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-[#86868b] text-xs"></i>
+            <input type="text" id="filter-search" placeholder="Search title, company, skills (Python, FastAPI, Redis)..." 
+                class="apple-search-input w-full pl-10 pr-4 text-xs placeholder-[#86868b]">
         </div>
 
-        <!-- Filter Selects -->
-        <div class="w-full lg:w-2/3 flex flex-wrap items-center justify-end gap-3 text-xs">
+        <!-- Filter Selects with Apple Capsule Styling -->
+        <div class="w-full lg:w-3/5 flex flex-wrap items-center justify-end gap-2.5 text-xs">
             <!-- Min Score -->
-            <div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg">
-                <span class="text-slate-400 font-medium">Min Score:</span>
-                <select id="filter-score" class="bg-transparent text-slate-200 focus:outline-none font-semibold">
-                    <option value="0">All Scores (0%+)</option>
-                    <option value="50">Fair Match (50%+)</option>
-                    <option value="70" selected>High Match (70%+)</option>
-                    <option value="85">Elite Match (85%+)</option>
+            <div class="flex items-center space-x-2 bg-[#272729] border border-white/10 px-3 py-1.5 rounded-full">
+                <span class="text-[#86868b] font-medium">Score:</span>
+                <select id="filter-score" class="bg-transparent text-white focus:outline-none font-medium cursor-pointer">
+                    <option value="0" class="bg-[#272729]">All (0%+)</option>
+                    <option value="50" class="bg-[#272729]">Fair (50%+)</option>
+                    <option value="70" class="bg-[#272729]" selected>High Match (70%+)</option>
+                    <option value="85" class="bg-[#272729]">Elite (85%+)</option>
                 </select>
             </div>
 
             <!-- Status Filter -->
-            <div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg">
-                <span class="text-slate-400 font-medium">Status:</span>
-                <select id="filter-status" class="bg-transparent text-slate-200 focus:outline-none font-semibold">
-                    <option value="all">All Status</option>
-                    <option value="new">New</option>
-                    <option value="tailored">Tailored</option>
-                    <option value="applied">Applied</option>
-                    <option value="archived">Archived</option>
-                    <option value="unverified">Location Unverified</option>
+            <div class="flex items-center space-x-2 bg-[#272729] border border-white/10 px-3 py-1.5 rounded-full">
+                <span class="text-[#86868b] font-medium">Status:</span>
+                <select id="filter-status" class="bg-transparent text-white focus:outline-none font-medium cursor-pointer">
+                    <option value="all" class="bg-[#272729]">All Status</option>
+                    <option value="new" class="bg-[#272729]">New</option>
+                    <option value="tailored" class="bg-[#272729]">Tailored</option>
+                    <option value="applied" class="bg-[#272729]">Applied</option>
+                    <option value="archived" class="bg-[#272729]">Archived</option>
+                    <option value="unverified" class="bg-[#272729]">Location Unverified</option>
                 </select>
             </div>
 
             <!-- Source Filter -->
-            <div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg">
-                <span class="text-slate-400 font-medium">Source:</span>
-                <select id="filter-source" class="bg-transparent text-slate-200 focus:outline-none font-semibold">
-                    <option value="all">All Sources</option>
-                    <option value="Naukri">Naukri</option>
-                    <option value="LinkedIn">LinkedIn</option>
-                    <option value="Indeed">Indeed</option>
-                    <option value="Glassdoor">Glassdoor</option>
-                    <option value="Google Jobs">Google Jobs</option>
-                    <option value="ZipRecruiter">ZipRecruiter</option>
-                    <option value="Ashby">Ashby</option>
-                    <option value="Greenhouse">Greenhouse</option>
-                    <option value="Lever">Lever</option>
-                    <option value="Jobicy">Jobicy</option>
-                    <option value="RemoteOK">RemoteOK</option>
-                    <option value="SearchDork">Search Dorks</option>
+            <div class="flex items-center space-x-2 bg-[#272729] border border-white/10 px-3 py-1.5 rounded-full">
+                <span class="text-[#86868b] font-medium">Source:</span>
+                <select id="filter-source" class="bg-transparent text-white focus:outline-none font-medium cursor-pointer">
+                    <option value="all" class="bg-[#272729]">All Sources</option>
+                    <option value="Naukri" class="bg-[#272729]">Naukri</option>
+                    <option value="LinkedIn" class="bg-[#272729]">LinkedIn</option>
+                    <option value="Indeed" class="bg-[#272729]">Indeed</option>
+                    <option value="Glassdoor" class="bg-[#272729]">Glassdoor</option>
+                    <option value="Google Jobs" class="bg-[#272729]">Google Jobs</option>
+                    <option value="ZipRecruiter" class="bg-[#272729]">ZipRecruiter</option>
+                    <option value="Ashby" class="bg-[#272729]">Ashby</option>
+                    <option value="Greenhouse" class="bg-[#272729]">Greenhouse</option>
+                    <option value="Lever" class="bg-[#272729]">Lever</option>
+                    <option value="Jobicy" class="bg-[#272729]">Jobicy</option>
+                    <option value="RemoteOK" class="bg-[#272729]">RemoteOK</option>
+                    <option value="SearchDork" class="bg-[#272729]">Search Dorks</option>
                 </select>
             </div>
 
-            <!-- Filter Reset -->
-            <button onclick="applyFilters()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold transition-colors">
-                Apply Filters
+            <!-- Apply Button (Pill) -->
+            <button onclick="applyFilters()" class="apple-btn-pill text-xs py-1.5 px-4">
+                Filter
             </button>
         </div>
     </div>
 </div>
 
-<!-- Job Cards Feed -->
+<!-- Job Cards Feed: Apple Utility Cards (18px radius) -->
 <div id="job-feed" class="space-y-4">
     {% if jobs %}
         {% for job in jobs %}
-        <div class="bg-slate-900/60 border border-slate-800 hover:border-slate-700 rounded-xl p-5 transition-all shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="apple-card hover:border-[#0066cc]/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div class="flex-1">
-                <div class="flex items-center flex-wrap gap-2 mb-2">
-                    <!-- Match Score Badge -->
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold 
-                        {% if job.match_score >= 85 %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30
-                        {% elif job.match_score >= 70 %}bg-blue-500/10 text-blue-400 border border-blue-500/30
-                        {% else %}bg-amber-500/10 text-amber-400 border border-amber-500/30{% endif %}">
+                <div class="flex items-center flex-wrap gap-2 mb-2.5">
+                    <!-- Match Score Capsule -->
+                    <span class="apple-status-chip font-semibold
+                        {% if job.match_score >= 85 %}bg-emerald-950/60 text-emerald-400 border border-emerald-500/30
+                        {% elif job.match_score >= 70 %}bg-blue-950/60 text-[#2997ff] border border-blue-500/30
+                        {% else %}bg-amber-950/60 text-amber-400 border border-amber-500/30{% endif %}">
                         {{ job.match_score }}% Match • {{ job.match_tier }}
                     </span>
 
                     <!-- Source Platform -->
-                    <span class="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-slate-300 font-medium border border-slate-700">
+                    <span class="apple-status-chip bg-[#272729] text-[#d2d2d7] border border-white/10">
                         {{ job.source_platform }}
                     </span>
 
                     <!-- Remote / Location -->
-                    <span class="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-slate-300 font-medium">
-                        <i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>{{ job.location }}
+                    <span class="apple-status-chip bg-[#272729] text-[#a1a1a6] border border-white/5">
+                        <i class="fa-solid fa-location-dot text-[#86868b] mr-1 text-[11px]"></i>{{ job.location }}
                     </span>
 
                     <!-- Posted Date -->
-                    <span class="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-slate-300 font-medium">
-                        <i class="fa-regular fa-clock text-slate-400 mr-1"></i>
+                    <span class="apple-status-chip bg-[#272729] text-[#a1a1a6] border border-white/5">
+                        <i class="fa-regular fa-clock text-[#86868b] mr-1 text-[11px]"></i>
                         {% if job.posted_at_ist %}{{ job.posted_at_ist[:16] }}
                         {% elif job.posted_date %}{{ job.posted_date }}
                         {% else %}Recent{% endif %}
                     </span>
                     {% if job.posted_date_unverified %}
-                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">
+                    <span class="apple-status-chip bg-amber-950/40 text-amber-300 border border-amber-500/20 text-[10px]">
                         unverified date
                     </span>
                     {% endif %}
 
                     <!-- Status Badge -->
-                    <span class="px-2 py-0.5 rounded text-[11px] uppercase font-semibold
-                        {% if job.status == 'tailored' %}bg-indigo-500/20 text-indigo-300
-                        {% elif job.status == 'applied' %}bg-emerald-500/20 text-emerald-300
-                        {% elif job.status == 'archived' %}bg-slate-800 text-slate-500
-                        {% else %}bg-blue-500/10 text-blue-400{% endif %}">
+                    <span class="apple-status-chip uppercase font-semibold
+                        {% if job.status == 'tailored' %}bg-indigo-950/60 text-indigo-300 border border-indigo-500/30
+                        {% elif job.status == 'applied' %}bg-emerald-950/60 text-emerald-300 border border-emerald-500/30
+                        {% elif job.status == 'archived' %}bg-[#1e1e1f] text-[#86868b] border border-white/5
+                        {% else %}bg-[#272729] text-[#2997ff] border border-blue-500/20{% endif %}">
                         {{ job.status }}
                     </span>
-                    {% if not job.notified and job.notify_attempts and job.notify_attempts >= 5 %}
-                    <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30">
-                        notification failed
-                    </span>
-                    {% endif %}
                 </div>
 
-                <!-- Job Title & Company -->
-                <h3 class="text-base font-bold text-white tracking-tight">
-                    <a href="/jobs/{{ job.id }}" class="hover:text-blue-400 transition-colors">
+                <!-- Job Title & Company in Apple SF Pro Typography -->
+                <h3 class="text-lg font-semibold text-white tracking-[-0.374px]">
+                    <a href="/jobs/{{ job.id }}" class="hover:text-[#2997ff] transition-colors">
                         {{ job.title }}
                     </a>
                 </h3>
-                <div class="text-xs text-slate-400 mt-0.5 font-medium">
-                    <span class="text-slate-200 font-semibold">{{ job.company }}</span> • {{ job.role_category }}
+                <div class="text-[14px] text-[#86868b] mt-0.5 font-normal tracking-[-0.224px]">
+                    <span class="text-[#f5f5f7] font-medium">{{ job.company }}</span> • {{ job.role_category }}
                 </div>
 
-                <!-- Description snippet -->
+                <!-- Snippet -->
                 {% if job.description %}
-                <p class="text-xs text-slate-400 mt-2 line-clamp-2">
+                <p class="text-[14px] text-[#a1a1a6] mt-2 line-clamp-2 leading-relaxed">
                     {{ job.description|striptags }}
                 </p>
                 {% endif %}
             </div>
 
-            <!-- Actions -->
-            <div class="flex items-center space-x-2 shrink-0">
-                <a href="/jobs/{{ job.id }}" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600/90 hover:bg-blue-600 text-white transition-all shadow-sm">
-                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Tailor & Apply
+            <!-- Apple Pill Interactive Actions -->
+            <div class="flex items-center space-x-2.5 shrink-0">
+                <a href="/jobs/{{ job.id }}" class="apple-btn-pill text-xs py-2 px-4 shadow-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-xs"></i> Tailor & Apply
                 </a>
-                <a href="{{ job.url }}" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all border border-slate-700">
-                    <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> View Post
+                <a href="{{ job.url }}" target="_blank" class="apple-btn-ghost-pill text-xs py-2 px-3.5">
+                    <i class="fa-solid fa-arrow-up-right-from-square mr-1 text-xs"></i> Direct Post
                 </a>
             </div>
         </div>
         {% endfor %}
     {% else %}
-        <div class="text-center py-16 bg-slate-900/40 rounded-xl border border-slate-800">
-            <div class="w-12 h-12 rounded-full bg-blue-600/10 text-blue-400 flex items-center justify-center mx-auto mb-3 text-lg">
-                <i class="fa-solid fa-magnifying-glass"></i>
+        <div class="text-center py-20 apple-card-glass">
+            <div class="w-12 h-12 rounded-full bg-[#0066cc]/10 text-[#2997ff] flex items-center justify-center mx-auto mb-3 text-lg">
+                <i class="fa-solid fa-radar"></i>
             </div>
-            <h4 class="text-sm font-semibold text-white">No jobs found matching criteria</h4>
-            <p class="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">Click below to trigger a discovery cycle across ATS platforms, remote boards, and Google ATS dorks.</p>
-            <button onclick="triggerScraper('all')" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold">
+            <h4 class="text-base font-semibold text-white tracking-[-0.28px]">No job postings found matching criteria</h4>
+            <p class="text-sm text-[#86868b] max-w-sm mx-auto mt-1 mb-5">Run an autonomous discovery cycle across Naukri, LinkedIn, Indeed, Glassdoor, and direct ATS feeds.</p>
+            <button onclick="triggerScraper('all')" class="apple-btn-pill">
                 <i class="fa-solid fa-radar mr-1.5"></i> Run Discovery Now
             </button>
         </div>

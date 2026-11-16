@@ -22,6 +22,8 @@ from app.api.routes_email import router as email_router
 from app.api.routes_tracker import router as tracker_router
 from app.api.routes_analytics import router as analytics_router
 from app.api.routes_mcp import router as mcp_router
+from app.api.routes_security import router as security_router
+from app.api.routes_telemetry import router as telemetry_router
 from app.config import settings
 
 
@@ -94,6 +96,8 @@ app.include_router(email_router)
 app.include_router(tracker_router)
 app.include_router(analytics_router)
 app.include_router(mcp_router)
+app.include_router(security_router)
+app.include_router(telemetry_router)
 
 
 
@@ -106,7 +110,40 @@ if static_dir.exists():
 # Security & Single-User Authentication Middleware
 # -------------------------------------------------------------
 
-PUBLIC_PATHS = {"/health", "/health/live", "/health/ready", "/login"}
+PUBLIC_PATHS = {
+    "/health",
+    "/health/live",
+    "/health/ready",
+    "/login",
+    "/api/telemetry/web-vitals",
+    "/api/security/audit",
+}
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    """Enforces strict modern HTTP security headers matching Cloudflare / OWASP standards."""
+    response = await call_next(request)
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
+        "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' https:; "
+        "frame-ancestors 'none'; "
+        "object-src 'none'; "
+        "base-uri 'self';"
+    )
+    response.headers["Content-Security-Policy"] = csp
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), browsing-topics=()"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    if settings.ENV == "production" or not settings.DEBUG:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    return response
 
 
 @app.middleware("http")

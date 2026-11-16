@@ -142,6 +142,17 @@ MCP_TOOLS_DEFINITIONS: List[Dict[str, Any]] = [
                 "limit": {"type": "integer", "description": "Number of recent emails to analyze (default 15)."}
             }
         }
+    },
+    {
+        "name": "generate_company_dossier",
+        "description": "Generates a deep strategic company dossier, architectural tech stack breakdown, interviewer persona, reverse-interview questions, and LinkedIn outreach notes.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "job_id": {"type": "integer", "description": "Database ID of the job posting."}
+            },
+            "required": ["job_id"]
+        }
     }
 ]
 
@@ -430,6 +441,24 @@ async def _execute_tool(tool_name: str, args: Dict[str, Any], db: AsyncSession) 
         scanner = InboxScanner()
         res = await scanner.get_recent_emails_summary(limit=limit)
         return json.dumps(res, indent=2)
+
+    elif tool_name == "generate_company_dossier":
+        job_id = int(args.get("job_id", 0))
+        stmt = select(JobPosting).where(JobPosting.id == job_id)
+        res = await db.execute(stmt)
+        job = res.scalar_one_or_none()
+        if not job:
+            return f"Job with id {job_id} not found."
+
+        from app.intelligence.dossier import CompanyDossierGenerator
+        dossier_gen = CompanyDossierGenerator()
+        dossier = dossier_gen.generate_dossier(
+            company=job.company,
+            job_title=job.title,
+            job_url=job.url or "",
+            description=job.description or ""
+        )
+        return json.dumps(dossier, indent=2)
 
     else:
         raise ValueError(f"Unknown tool name: {tool_name}")

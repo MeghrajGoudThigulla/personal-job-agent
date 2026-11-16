@@ -5,66 +5,70 @@
 {% block content %}
 <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
-        <div class="flex items-center space-x-2 text-xs text-slate-400 mb-1">
-            <a href="/" class="hover:text-blue-400"><i class="fa-solid fa-arrow-left mr-1"></i> Back to Feed</a>
+        <div class="flex items-center space-x-2 text-xs text-[#86868b] mb-1.5 font-normal tracking-[-0.1px]">
+            <a href="/" class="hover:text-[#0066cc] transition-colors"><i class="fa-solid fa-arrow-left mr-1"></i> Back to Feed</a>
             <span>•</span>
-            <span>{{ job.source_platform }}</span>
+            <span class="text-[#a1a1a6]">{{ job.source_platform }}</span>
             <span>•</span>
             <span>Posted: {% if job.posted_at_ist %}{{ job.posted_at_ist[:16] }}{% elif job.posted_date %}{{ job.posted_date }}{% else %}Recent{% endif %}</span>
             {% if job.posted_date_unverified %}
-            <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">unverified date</span>
+            <span class="apple-status-chip bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px]">unverified date</span>
             {% endif %}
             <span>•</span>
             <span>Discovered: {{ job.discovered_at_ist[:16] if job.discovered_at_ist else (job.discovered_at[:10] if job.discovered_at else 'Recent') }}</span>
         </div>
-        <h1 class="text-2xl font-bold text-white tracking-tight">{{ job.title }}</h1>
-        <div class="text-sm text-slate-300 font-medium mt-0.5">
-            <span class="text-blue-400 font-semibold">{{ job.company }}</span> • {{ job.location }} • <span class="text-slate-400">{{ job.role_category }}</span>
+        <h1 class="text-2xl sm:text-3xl font-semibold text-white tracking-[-0.374px]">{{ job.title }}</h1>
+        <div class="text-sm text-[#a1a1a6] font-normal mt-1 flex flex-wrap items-center gap-1.5">
+            <span class="text-[#0066cc] dark:text-[#2997ff] font-semibold">{{ job.company }}</span>
+            <span>•</span>
+            <span>{{ job.location }}</span>
+            <span>•</span>
+            <span class="text-[#86868b]">{{ job.role_category }}</span>
             {% if not job.notified and job.notify_attempts and job.notify_attempts >= 5 %}
-            <span class="ml-2 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+            <span class="ml-2 apple-status-chip bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[10px]">
                 notification failed
             </span>
             {% endif %}
         </div>
     </div>
 
-    <!-- Actions -->
+    <!-- Actions: Apple Pill Buttons -->
     <div class="flex flex-wrap items-center gap-2">
-        <a href="{{ job.url }}" target="_blank" class="px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">
-            <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Original Posting
+        <a href="{{ job.url }}" target="_blank" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs font-normal">
+            <i class="fa-solid fa-arrow-up-right-from-square mr-1.5 text-[11px]"></i> Original Posting
         </a>
-        <button onclick="retryJob()" class="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">
-            <i class="fa-solid fa-rotate-right mr-1"></i> Reset / Retry
+        <button onclick="retryJob()" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs font-normal">
+            <i class="fa-solid fa-rotate-right mr-1.5 text-[11px]"></i> Reset
         </button>
-        <button onclick="tailorNow()" id="btn-tailor-job" class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/20">
-            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Generate / Refresh Tailoring
+        <button onclick="tailorNow()" id="btn-tailor-job" class="apple-btn-pill text-xs font-medium">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-[11px]"></i> Tailor Resume & Pack
         </button>
-        <button onclick="updateStatus('applied')" class="px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-600/90 hover:bg-emerald-600 text-white">
-            <i class="fa-solid fa-check mr-1"></i> Mark Applied
+        <button onclick="updateStatus('applied')" class="apple-btn-pill bg-[#1b8a4f] hover:bg-[#209d5a] text-xs font-medium">
+            <i class="fa-solid fa-check mr-1.5 text-[11px]"></i> Mark Applied
         </button>
     </div>
 </div>
 
-<!-- STAIR Structure-Aware Match Banner -->
-<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 mb-6">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4 mb-4">
-        <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg
+<!-- STAIR Match Verdict Card (Apple Glass) -->
+<div class="apple-card-glass p-5 mb-6 border border-[rgba(255,255,255,0.1)]">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[rgba(255,255,255,0.08)] pb-4 mb-4">
+        <div class="flex items-center space-x-3.5">
+            <div class="w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-lg
                 {% if job.match_score >= 85 %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30
-                {% elif job.match_score >= 70 %}bg-blue-500/10 text-blue-400 border border-blue-500/30
+                {% elif job.match_score >= 70 %}bg-[#0066cc]/15 text-[#2997ff] border border-[#0066cc]/40
                 {% else %}bg-amber-500/10 text-amber-400 border border-amber-500/30{% endif %}">
                 {{ job.match_score }}%
             </div>
             <div>
-                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">STAIR Match Verdict</div>
-                <div class="text-sm font-bold text-white">{{ match_meta.tier }} Priority Tier • {{ job.role_category }}</div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">STAIR Match Verdict</div>
+                <div class="text-sm font-semibold text-white tracking-[-0.2px]">{{ match_meta.tier }} Priority Tier • {{ job.role_category }}</div>
             </div>
         </div>
 
         <div>
-            <span class="text-xs px-3 py-1 rounded-full font-semibold
-                {% if job.match_score >= 70 %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
-                {% else %}bg-slate-800 text-slate-400{% endif %}">
+            <span class="apple-status-chip text-xs font-medium
+                {% if job.match_score >= 70 %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/30
+                {% else %}bg-[#272729] text-[#a1a1a6] border border-[rgba(255,255,255,0.08)]{% endif %}">
                 Recommendation: {{ match_meta.recommendation }}
             </span>
         </div>
@@ -72,26 +76,26 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
         <div>
-            <span class="text-slate-400 font-semibold block mb-2">Matched Stack & Core Capabilities:</span>
+            <span class="text-[#a1a1a6] font-medium block mb-2">Matched Stack & Core Capabilities:</span>
             <div class="flex flex-wrap gap-1.5">
                 {% if match_meta.matched_skills %}
                     {% for skill in match_meta.matched_skills %}
-                    <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/30 font-medium">
+                    <span class="apple-status-chip bg-[#0066cc]/10 text-[#2997ff] border border-[#0066cc]/30 text-[11px]">
                         ✓ {{ skill }}
                     </span>
                     {% endfor %}
                 {% else %}
-                    <span class="text-slate-500">None detected in snippet</span>
+                    <span class="text-[#86868b]">None detected in snippet</span>
                 {% endif %}
             </div>
         </div>
 
         <div>
-            <span class="text-slate-400 font-semibold block mb-2">Missing or Stretch Technologies:</span>
+            <span class="text-[#a1a1a6] font-medium block mb-2">Missing or Stretch Technologies:</span>
             <div class="flex flex-wrap gap-1.5">
                 {% if match_meta.missing_skills %}
                     {% for skill in match_meta.missing_skills %}
-                    <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-medium">
+                    <span class="apple-status-chip bg-[#272729] text-[#a1a1a6] border border-[rgba(255,255,255,0.1)] text-[11px]">
                         {{ skill }}
                     </span>
                     {% endfor %}
@@ -103,235 +107,387 @@
     </div>
 </div>
 
-<!-- Tabs: Tailored Resume vs Cold Outreach vs Description vs Interview Prep vs Cover Letter -->
-<div class="border-b border-slate-800 mb-6 flex space-x-6 text-sm font-semibold overflow-x-auto">
-    <button onclick="switchTab('resume')" id="tab-btn-resume" class="pb-3 border-b-2 border-blue-500 text-blue-400">
-        <i class="fa-solid fa-file-lines mr-1.5"></i> Tailored Resume (LaTeX / PDF)
+<!-- Apple Tab Bar Navigation -->
+<div class="border-b border-[rgba(255,255,255,0.1)] mb-6 flex space-x-6 text-sm font-medium overflow-x-auto scrollbar-none">
+    <button onclick="switchTab('resume')" id="tab-btn-resume" class="pb-3 border-b-2 border-[#0066cc] text-[#2997ff] transition-colors whitespace-nowrap">
+        <i class="fa-solid fa-file-lines mr-1.5"></i> Tailored Resume (LaTeX)
     </button>
-    <button onclick="switchTab('coverletter')" id="tab-btn-coverletter" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+    <button onclick="switchTab('dossier')" id="tab-btn-dossier" class="pb-3 border-b-2 border-transparent text-[#86868b] hover:text-white transition-colors whitespace-nowrap">
+        <i class="fa-solid fa-building-user mr-1.5"></i> Company Dossier
+    </button>
+    <button onclick="switchTab('linkedin')" id="tab-btn-linkedin" class="pb-3 border-b-2 border-transparent text-[#86868b] hover:text-white transition-colors whitespace-nowrap">
+        <i class="fa-brands fa-linkedin mr-1.5"></i> LinkedIn Intelligence
+    </button>
+    <button onclick="switchTab('coverletter')" id="tab-btn-coverletter" class="pb-3 border-b-2 border-transparent text-[#86868b] hover:text-white transition-colors whitespace-nowrap">
         <i class="fa-solid fa-file-signature mr-1.5"></i> Cover Letter (Text)
     </button>
-    <button onclick="switchTab('prep')" id="tab-btn-prep" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
-        <i class="fa-solid fa-graduation-cap mr-1.5"></i> Interview Prep Pack
+    <button onclick="switchTab('prep')" id="tab-btn-prep" class="pb-3 border-b-2 border-transparent text-[#86868b] hover:text-white transition-colors whitespace-nowrap">
+        <i class="fa-solid fa-graduation-cap mr-1.5"></i> Interview Prep
     </button>
-    <button onclick="switchTab('skillgap')" id="tab-btn-skillgap" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+    <button onclick="switchTab('skillgap')" id="tab-btn-skillgap" class="pb-3 border-b-2 border-transparent text-[#86868b] hover:text-white transition-colors whitespace-nowrap">
         <i class="fa-solid fa-lightbulb mr-1.5"></i> Skill Gaps & Bridges
     </button>
-    <button onclick="switchTab('outreach')" id="tab-btn-outreach" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
-
+    <button onclick="switchTab('outreach')" id="tab-btn-outreach" class="pb-3 border-b-2 border-transparent text-[#86868b] hover:text-white transition-colors whitespace-nowrap">
         <i class="fa-solid fa-envelope-open-text mr-1.5"></i> Cold Emails & 4MM
     </button>
-    <button onclick="switchTab('desc')" id="tab-btn-desc" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
-        <i class="fa-solid fa-align-left mr-1.5"></i> Original Job Description
+    <button onclick="switchTab('desc')" id="tab-btn-desc" class="pb-3 border-b-2 border-transparent text-[#86868b] hover:text-white transition-colors whitespace-nowrap">
+        <i class="fa-solid fa-align-left mr-1.5"></i> Job Description
     </button>
 </div>
-
 
 <!-- TAB 1: TAILORED RESUME -->
 <div id="tab-content-resume" class="space-y-4">
     {% if job.application %}
-    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
-        <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+    <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)]">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[rgba(255,255,255,0.08)] gap-3">
             <div class="flex items-center space-x-3">
-                <span class="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
+                <span class="apple-status-chip bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold">
                     Anti-Slop Score: {{ job.application.slop_score }}/100 (Distinct)
                 </span>
-                <span class="text-xs text-slate-400">Generated tailored version specifically aligned to {{ job.company }}</span>
+                <span class="text-xs text-[#86868b]">Tailored version specifically aligned to {{ job.company }}</span>
             </div>
 
             <div class="flex items-center space-x-2">
-                <a href="/api/tailor/{{ job.id }}/download-pdf" target="_blank" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-sm flex items-center">
-                    <i class="fa-solid fa-download mr-1.5"></i> Download PDF
+                <a href="/api/tailor/{{ job.id }}/download-pdf" target="_blank" class="apple-btn-pill text-xs py-1.5 px-3.5">
+                    <i class="fa-solid fa-download mr-1.5 text-[10px]"></i> Download PDF
                 </a>
-                <a href="/api/tailor/{{ job.id }}/download-tex" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center">
-                    <i class="fa-solid fa-code mr-1.5"></i> Download .tex
+                <a href="/api/tailor/{{ job.id }}/download-tex" target="_blank" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1.5 px-3">
+                    <i class="fa-solid fa-code mr-1.5 text-[10px]"></i> Download .tex
                 </a>
             </div>
         </div>
 
         <!-- LaTeX Preview -->
         <div class="mt-4">
-            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-                <span class="font-semibold">Tailored LaTeX Source:</span>
-                <button onclick="copyToClipboard('code-latex')" class="hover:text-white"><i class="fa-solid fa-copy mr-1"></i> Copy LaTeX</button>
+            <div class="flex items-center justify-between text-xs text-[#86868b] mb-2 font-medium">
+                <span>Tailored LaTeX Source:</span>
+                <button onclick="copyToClipboard('code-latex')" class="hover:text-white transition-colors"><i class="fa-solid fa-copy mr-1"></i> Copy LaTeX</button>
             </div>
-            <pre id="code-latex" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 font-mono overflow-x-auto max-h-[500px] border border-slate-800/80">{{ job.application.tailored_resume_tex }}</pre>
+            <pre id="code-latex" class="bg-[#121214] p-4 rounded-xl text-xs text-[#d2d2d7] font-mono overflow-x-auto max-h-[500px] border border-[rgba(255,255,255,0.08)] leading-relaxed">{{ job.application.tailored_resume_tex }}</pre>
         </div>
     </div>
     {% else %}
-    <div class="text-center py-12 bg-slate-900/40 rounded-xl border border-slate-800">
-        <p class="text-xs text-slate-400 mb-3">No tailored resume generated yet for this posting.</p>
-        <button onclick="tailorNow()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm">
-            <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Generate Tailored Resume & Outreach
+    <div class="text-center py-12 apple-card-glass border border-[rgba(255,255,255,0.08)]">
+        <p class="text-xs text-[#86868b] mb-3">No tailored resume generated yet for this posting.</p>
+        <button onclick="tailorNow()" class="apple-btn-pill text-xs">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-[10px]"></i> Generate Tailored Resume & Outreach
         </button>
     </div>
     {% endif %}
 </div>
 
-<!-- TAB 2: COLD OUTREACH -->
-<div id="tab-content-outreach" class="space-y-6 hidden">
-    {% if job.application %}
-    <!-- HR / Recruiter Cold Email -->
-    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+<!-- TAB: COMPANY EXECUTIVE DOSSIER (Inspired by AienTech/dossier) -->
+<div id="tab-content-dossier" class="space-y-5 hidden">
+    <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)]">
+        <div class="flex items-center justify-between pb-4 border-b border-[rgba(255,255,255,0.08)] mb-4">
             <div>
-                <h3 class="text-sm font-bold text-white">HR / Recruiter Cold Email</h3>
-                <span class="text-xs text-slate-400">Strictly adheres to MPM JobHunt Cheat Sheet (clean links, zero bold markers)</span>
+                <h3 class="text-base font-semibold text-white tracking-[-0.2px] flex items-center">
+                    <i class="fa-solid fa-building-user text-[#0066cc] dark:text-[#2997ff] mr-2"></i> Company Executive Dossier
+                </h3>
+                <p class="text-xs text-[#86868b] mt-0.5">Deep architecture breakdown, production scale challenges, and executive reverse-interview strategy.</p>
             </div>
-            <button onclick="copyToClipboard('text-hr-email')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
-                <i class="fa-solid fa-copy mr-1"></i> Copy Email
+            <button onclick="loadDossier(true)" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1.5 px-3">
+                <i class="fa-solid fa-rotate mr-1 text-[10px]"></i> Refresh Dossier
             </button>
         </div>
-        <pre id="text-hr-email" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 whitespace-pre-wrap font-mono border border-slate-800/80">{{ job.application.cold_email_hr }}</pre>
-    </div>
 
-    <!-- Hiring Manager / Peer Email -->
-    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
-            <div>
-                <h3 class="text-sm font-bold text-white">Hiring Manager / Peer Email</h3>
-                <span class="text-xs text-slate-400">Technical conversation starter for 15-minute coffee chat</span>
-            </div>
-            <button onclick="copyToClipboard('text-hm-email')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
-                <i class="fa-solid fa-copy mr-1"></i> Copy Email
-            </button>
+        <div id="dossier-loading" class="text-center py-10 text-xs text-[#86868b] hidden">
+            <i class="fa-solid fa-spinner fa-spin text-lg text-[#0066cc] dark:text-[#2997ff] mb-2 block"></i> Synthesizing engineering architecture and scale challenges...
         </div>
-        <pre id="text-hm-email" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 whitespace-pre-wrap font-mono border border-slate-800/80">{{ job.application.cold_email_hiring_manager }}</pre>
-    </div>
 
-    <!-- LinkedIn 4MM Sequence -->
-    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
-        <div class="pb-3 border-b border-slate-800 mb-4">
-            <h3 class="text-sm font-bold text-white">LinkedIn 4MM Sequence</h3>
-            <span class="text-xs text-slate-400">Multi-touch relationship building sequence from MPM cheat sheet</span>
+        <div id="dossier-content" class="space-y-5">
+            <!-- Overview & Tech Stack Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-[#18181b] p-4 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                    <span class="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-2">Company Overview & Scale</span>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between py-1 border-b border-[rgba(255,255,255,0.05)]">
+                            <span class="text-[#86868b]">Domain / Website:</span>
+                            <span class="text-white font-medium" id="dos-domain">-</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-[rgba(255,255,255,0.05)]">
+                            <span class="text-[#86868b]">Archetype:</span>
+                            <span class="text-white font-medium" id="dos-archetype">-</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-[rgba(255,255,255,0.05)]">
+                            <span class="text-[#86868b]">Estimated Team Size:</span>
+                            <span class="text-white font-medium" id="dos-scale">-</span>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <span class="text-[#86868b]">Curation Status:</span>
+                            <span class="apple-status-chip text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30" id="dos-curated">Curated</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[#18181b] p-4 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                    <span class="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-2">Inferred Production Architecture</span>
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <span class="text-[#86868b] block mb-1">Backend & Languages:</span>
+                            <div class="flex flex-wrap gap-1" id="dos-tech-backend"></div>
+                        </div>
+                        <div>
+                            <span class="text-[#86868b] block mb-1">Transactional & Cache Data Stores:</span>
+                            <div class="flex flex-wrap gap-1" id="dos-tech-database"></div>
+                        </div>
+                        <div>
+                            <span class="text-[#86868b] block mb-1">Cloud & Infrastructure:</span>
+                            <div class="flex flex-wrap gap-1" id="dos-tech-infra"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top 3 Engineering Scale Challenges -->
+            <div class="bg-[#18181b] p-4 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                <span class="text-[11px] font-semibold text-[#0066cc] dark:text-[#2997ff] uppercase tracking-wider block mb-3">
+                    <i class="fa-solid fa-server mr-1"></i> Core Engineering & Concurrency Challenges
+                </span>
+                <div class="space-y-2 text-xs text-[#d2d2d7]" id="dos-challenges"></div>
+            </div>
+
+            <!-- Interviewer Persona & Anti-Patterns -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-[#18181b] p-4 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                    <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block mb-2">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Interviewer Priorities & Culture
+                    </span>
+                    <div class="text-xs text-[#d2d2d7] space-y-1.5" id="dos-persona-priorities"></div>
+                </div>
+
+                <div class="bg-[#18181b] p-4 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                    <span class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider block mb-2">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Anti-Patterns to Avoid
+                    </span>
+                    <div class="text-xs text-[#d2d2d7] space-y-1.5" id="dos-persona-antipatterns"></div>
+                </div>
+            </div>
+
+            <!-- Tactical Reverse Interview Questions -->
+            <div class="bg-[#18181b] p-4 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
+                        <i class="fa-solid fa-circle-question mr-1"></i> Strategic Reverse-Interview Questions to Ask
+                    </span>
+                    <button onclick="copyToClipboard('dos-questions-text')" class="text-xs text-[#86868b] hover:text-white transition-colors">
+                        <i class="fa-solid fa-copy mr-1"></i> Copy Questions
+                    </button>
+                </div>
+                <div class="space-y-2.5 text-xs text-[#d2d2d7]" id="dos-questions"></div>
+                <div id="dos-questions-text" class="hidden"></div>
+            </div>
         </div>
-        
-        <div class="space-y-3" id="linkedin-seq-box">
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/80">
-                <div class="flex justify-between items-center mb-1 text-[11px] text-slate-400 font-semibold">
-                    <span>Message 1: Connect Request</span>
-                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white"><i class="fa-solid fa-copy"></i></button>
-                </div>
-                <div class="text-xs text-slate-300">{{ linkedin_messages.m1_connect }}</div>
-            </div>
-
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/80">
-                <div class="flex justify-between items-center mb-1 text-[11px] text-slate-400 font-semibold">
-                    <span>Message 2: 60-Second Feedback</span>
-                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white"><i class="fa-solid fa-copy"></i></button>
-                </div>
-                <div class="text-xs text-slate-300">{{ linkedin_messages.m2_feedback }}</div>
-            </div>
-
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/80">
-                <div class="flex justify-between items-center mb-1 text-[11px] text-slate-400 font-semibold">
-                    <span>Message 3: Alignment</span>
-                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white"><i class="fa-solid fa-copy"></i></button>
-                </div>
-                <div class="text-xs text-slate-300">{{ linkedin_messages.m3_alignment }}</div>
-            </div>
-
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/80">
-                <div class="flex justify-between items-center mb-1 text-[11px] text-slate-400 font-semibold">
-                    <span>Message 4: Referral Request with Link</span>
-                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white"><i class="fa-solid fa-copy"></i></button>
-                </div>
-                <div class="text-xs text-slate-300">{{ linkedin_messages.m4_referral }}</div>
-            </div>
-        </div>
     </div>
-    {% else %}
-    <div class="text-center py-12 bg-slate-900/40 rounded-xl border border-slate-800">
-        <p class="text-xs text-slate-400 mb-3">Outreach templates will be generated when you tailor this role.</p>
-        <button onclick="tailorNow()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm">
-            <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Generate Outreach
-        </button>
-    </div>
-    {% endif %}
 </div>
 
-<!-- TAB 3: DESCRIPTION -->
-<div id="tab-content-desc" class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 hidden">
-    <h3 class="text-sm font-bold text-white mb-3">Job Description</h3>
-    <div class="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans">
-        {{ job.description|striptags }}
+<!-- TAB: LINKEDIN INTELLIGENCE & INMAIL (Inspired by K-Sricharan/AI-LinkedIN-Jobs-Agent) -->
+<div id="tab-content-linkedin" class="space-y-5 hidden">
+    <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)]">
+        <div class="flex items-center justify-between pb-4 border-b border-[rgba(255,255,255,0.08)] mb-4">
+            <div>
+                <h3 class="text-base font-semibold text-white tracking-[-0.2px] flex items-center">
+                    <i class="fa-brands fa-linkedin text-[#0077b5] mr-2"></i> LinkedIn Recruiter Outreach & InMail Engine
+                </h3>
+                <p class="text-xs text-[#86868b] mt-0.5">High-conversion connection notes and InMail copy tailored to bypassing standard ATS queues.</p>
+            </div>
+            <a id="lnk-search-target" href="https://www.linkedin.com/search/results/people/?keywords={{ job.company }}+Recruiter" target="_blank" class="apple-btn-pill bg-[#0077b5] hover:bg-[#006097] text-xs py-1.5 px-3.5">
+                <i class="fa-brands fa-linkedin mr-1.5 text-[11px]"></i> Search Recruiters ↗
+            </a>
+        </div>
+
+        <!-- 1. Connection Request Note (<290 Chars) -->
+        <div class="space-y-2 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs font-semibold text-white">Connection Request Note</span>
+                    <span id="lnk-char-badge" class="apple-status-chip text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-mono">0 / 300 chars</span>
+                </div>
+                <button onclick="copyToClipboard('lnk-connect-note')" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1 px-2.5">
+                    <i class="fa-solid fa-copy mr-1 text-[10px]"></i> Copy Note
+                </button>
+            </div>
+            <pre id="lnk-connect-note" class="bg-[#121214] p-3.5 rounded-xl text-xs text-[#d2d2d7] whitespace-pre-wrap font-sans border border-[rgba(255,255,255,0.08)] leading-relaxed">Loading connection note...</pre>
+            <p class="text-[11px] text-[#86868b]">Tip: LinkedIn restricts connection notes to 300 characters. This note is strictly crafted to stay within 290 characters with zero promotional fluff.</p>
+        </div>
+
+        <!-- 2. Recruiter / Hiring Manager InMail -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-white">Recruiter / Hiring Lead InMail Draft</span>
+                <button onclick="copyToClipboard('lnk-inmail-body')" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1 px-2.5">
+                    <i class="fa-solid fa-copy mr-1 text-[10px]"></i> Copy InMail
+                </button>
+            </div>
+            <pre id="lnk-inmail-body" class="bg-[#121214] p-4 rounded-xl text-xs text-[#d2d2d7] whitespace-pre-wrap font-mono border border-[rgba(255,255,255,0.08)] leading-relaxed">Loading InMail template...</pre>
+        </div>
     </div>
 </div>
 
 <!-- TAB 4: TEXT COVER LETTER -->
 <div id="tab-content-coverletter" class="space-y-4 hidden">
-    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+    <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)]">
+        <div class="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)] mb-3">
             <div>
-                <h3 class="text-sm font-bold text-white flex items-center">
-                    <i class="fa-solid fa-file-signature text-blue-400 mr-2"></i> Anti-Slop Text Cover Letter
+                <h3 class="text-sm font-semibold text-white flex items-center">
+                    <i class="fa-solid fa-file-signature text-[#0066cc] dark:text-[#2997ff] mr-2"></i> Anti-Slop Text Cover Letter
                 </h3>
-                <span class="text-xs text-slate-400">&lt; 200 words, metric-dense, formatted for Telegram & job portal quick copy-paste</span>
+                <span class="text-xs text-[#86868b]">&lt; 200 words, metric-dense, formatted for Telegram & job portal quick copy-paste</span>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="loadCoverLetter(true)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
-                    <i class="fa-solid fa-rotate mr-1"></i> Refresh
+                <button onclick="loadCoverLetter(true)" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1.5 px-3">
+                    <i class="fa-solid fa-rotate mr-1 text-[10px]"></i> Refresh
                 </button>
-                <button onclick="copyToClipboard('text-cover-letter')" class="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-xs text-white font-medium shadow-sm">
-                    <i class="fa-solid fa-copy mr-1"></i> Copy Text
+                <button onclick="copyToClipboard('text-cover-letter')" class="apple-btn-pill text-xs py-1.5 px-3.5">
+                    <i class="fa-solid fa-copy mr-1 text-[10px]"></i> Copy Text
                 </button>
             </div>
         </div>
-        <div id="cover-letter-loading" class="text-center py-8 text-xs text-slate-400 hidden">
-            <i class="fa-solid fa-spinner fa-spin text-lg text-blue-400 mb-2 block"></i> Generating concise, anti-slop cover letter...
+        <div id="cover-letter-loading" class="text-center py-8 text-xs text-[#86868b] hidden">
+            <i class="fa-solid fa-spinner fa-spin text-lg text-[#0066cc] dark:text-[#2997ff] mb-2 block"></i> Generating concise, anti-slop cover letter...
         </div>
-        <pre id="text-cover-letter" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 whitespace-pre-wrap font-mono border border-slate-800/80 leading-relaxed">Loading cover letter...</pre>
+        <pre id="text-cover-letter" class="bg-[#121214] p-4 rounded-xl text-xs text-[#d2d2d7] whitespace-pre-wrap font-mono border border-[rgba(255,255,255,0.08)] leading-relaxed">Loading cover letter...</pre>
     </div>
 </div>
 
 <!-- TAB 5: INTERVIEW PREP PACK -->
 <div id="tab-content-prep" class="space-y-4 hidden">
-    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+    <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)]">
+        <div class="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)] mb-4">
             <div>
-                <h3 class="text-sm font-bold text-white flex items-center">
+                <h3 class="text-sm font-semibold text-white flex items-center">
                     <i class="fa-solid fa-graduation-cap text-cyan-400 mr-2"></i> Structured Interview Preparation Pack
                 </h3>
-                <span class="text-xs text-slate-400">Technical deep-dives, STAR behavioral outlines, and reverse interviewer questions</span>
+                <span class="text-xs text-[#86868b]">Technical deep-dives, STAR behavioral outlines, and reverse interviewer questions</span>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="loadInterviewPrep(true)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
-                    <i class="fa-solid fa-rotate mr-1"></i> Refresh
+                <button onclick="loadInterviewPrep(true)" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1.5 px-3">
+                    <i class="fa-solid fa-rotate mr-1 text-[10px]"></i> Refresh
                 </button>
-                <button onclick="copyToClipboard('interview-prep-markdown')" class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-xs text-white font-medium shadow-sm">
-                    <i class="fa-solid fa-copy mr-1"></i> Copy Markdown
+                <button onclick="copyToClipboard('interview-prep-markdown')" class="apple-btn-pill bg-cyan-600 hover:bg-cyan-500 text-xs py-1.5 px-3.5">
+                    <i class="fa-solid fa-copy mr-1 text-[10px]"></i> Copy Markdown
                 </button>
             </div>
         </div>
-        <div id="interview-prep-loading" class="text-center py-8 text-xs text-slate-400 hidden">
+        <div id="interview-prep-loading" class="text-center py-8 text-xs text-[#86868b] hidden">
             <i class="fa-solid fa-spinner fa-spin text-lg text-cyan-400 mb-2 block"></i> Formulating technical talking points and STAR answers...
         </div>
         <div id="interview-prep-display" class="space-y-4">
-            <pre id="interview-prep-markdown" class="bg-slate-950 p-4 rounded-lg text-xs text-slate-300 whitespace-pre-wrap font-mono border border-slate-800/80 leading-relaxed">Loading prep pack...</pre>
+            <pre id="interview-prep-markdown" class="bg-[#121214] p-4 rounded-xl text-xs text-[#d2d2d7] whitespace-pre-wrap font-mono border border-[rgba(255,255,255,0.08)] leading-relaxed">Loading prep pack...</pre>
         </div>
     </div>
 </div>
 
 <!-- TAB 6: SKILL GAP & BRIDGES -->
 <div id="tab-content-skillgap" class="space-y-4 hidden">
-    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+    <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)]">
+        <div class="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)] mb-4">
             <div>
-                <h3 class="text-sm font-bold text-white flex items-center">
+                <h3 class="text-sm font-semibold text-white flex items-center">
                     <i class="fa-solid fa-lightbulb text-yellow-400 mr-2"></i> Skill Gap Analysis & Bridging Strategies
                 </h3>
-                <span class="text-xs text-slate-400">Identifies missing requirements in this posting and provides adjacent architectural bridges</span>
+                <span class="text-xs text-[#86868b]">Identifies missing requirements in this posting and provides adjacent architectural bridges</span>
             </div>
-            <button onclick="loadSkillGap(true)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
-                <i class="fa-solid fa-rotate mr-1"></i> Refresh
+            <button onclick="loadSkillGap(true)" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1.5 px-3">
+                <i class="fa-solid fa-rotate mr-1 text-[10px]"></i> Refresh
             </button>
         </div>
-        <div id="skill-gap-loading" class="text-center py-8 text-xs text-slate-400 hidden">
+        <div id="skill-gap-loading" class="text-center py-8 text-xs text-[#86868b] hidden">
             <i class="fa-solid fa-spinner fa-spin text-lg text-yellow-400 mb-2 block"></i> Analyzing tech requirements against your profile...
         </div>
         <div id="skill-gap-display" class="space-y-3">
-            <div class="text-xs text-slate-400 py-4 text-center">Loading skill gap insights...</div>
+            <div class="text-xs text-[#86868b] py-4 text-center">Loading skill gap insights...</div>
         </div>
+    </div>
+</div>
+
+<!-- TAB 7: COLD OUTREACH & 4MM -->
+<div id="tab-content-outreach" class="space-y-6 hidden">
+    {% if job.application %}
+    <!-- HR / Recruiter Cold Email -->
+    <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)]">
+        <div class="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)] mb-3">
+            <div>
+                <h3 class="text-sm font-semibold text-white">HR / Recruiter Cold Email</h3>
+                <span class="text-xs text-[#86868b]">Strictly adheres to MPM JobHunt Cheat Sheet (clean links, zero bold markers)</span>
+            </div>
+            <button onclick="copyToClipboard('text-hr-email')" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1 px-2.5">
+                <i class="fa-solid fa-copy mr-1 text-[10px]"></i> Copy Email
+            </button>
+        </div>
+        <pre id="text-hr-email" class="bg-[#121214] p-4 rounded-xl text-xs text-[#d2d2d7] whitespace-pre-wrap font-mono border border-[rgba(255,255,255,0.08)] leading-relaxed">{{ job.application.cold_email_hr }}</pre>
+    </div>
+
+    <!-- Hiring Manager / Peer Email -->
+    <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)]">
+        <div class="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)] mb-3">
+            <div>
+                <h3 class="text-sm font-semibold text-white">Hiring Manager / Peer Email</h3>
+                <span class="text-xs text-[#86868b]">Technical conversation starter for 15-minute coffee chat</span>
+            </div>
+            <button onclick="copyToClipboard('text-hm-email')" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1 px-2.5">
+                <i class="fa-solid fa-copy mr-1 text-[10px]"></i> Copy Email
+            </button>
+        </div>
+        <pre id="text-hm-email" class="bg-[#121214] p-4 rounded-xl text-xs text-[#d2d2d7] whitespace-pre-wrap font-mono border border-[rgba(255,255,255,0.08)] leading-relaxed">{{ job.application.cold_email_hiring_manager }}</pre>
+    </div>
+
+    <!-- LinkedIn 4MM Sequence -->
+    <div class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)]">
+        <div class="pb-3 border-b border-[rgba(255,255,255,0.08)] mb-4">
+            <h3 class="text-sm font-semibold text-white">LinkedIn 4MM Sequence</h3>
+            <span class="text-xs text-[#86868b]">Multi-touch relationship building sequence from MPM cheat sheet</span>
+        </div>
+        
+        <div class="space-y-3" id="linkedin-seq-box">
+            <div class="bg-[#121214] p-3.5 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                <div class="flex justify-between items-center mb-1 text-[11px] text-[#86868b] font-medium">
+                    <span>Message 1: Connect Request</span>
+                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white transition-colors"><i class="fa-solid fa-copy"></i></button>
+                </div>
+                <div class="text-xs text-[#d2d2d7]">{{ linkedin_messages.m1_connect }}</div>
+            </div>
+
+            <div class="bg-[#121214] p-3.5 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                <div class="flex justify-between items-center mb-1 text-[11px] text-[#86868b] font-medium">
+                    <span>Message 2: 60-Second Feedback</span>
+                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white transition-colors"><i class="fa-solid fa-copy"></i></button>
+                </div>
+                <div class="text-xs text-[#d2d2d7]">{{ linkedin_messages.m2_feedback }}</div>
+            </div>
+
+            <div class="bg-[#121214] p-3.5 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                <div class="flex justify-between items-center mb-1 text-[11px] text-[#86868b] font-medium">
+                    <span>Message 3: Alignment</span>
+                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white transition-colors"><i class="fa-solid fa-copy"></i></button>
+                </div>
+                <div class="text-xs text-[#d2d2d7]">{{ linkedin_messages.m3_alignment }}</div>
+            </div>
+
+            <div class="bg-[#121214] p-3.5 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                <div class="flex justify-between items-center mb-1 text-[11px] text-[#86868b] font-medium">
+                    <span>Message 4: Referral Request with Link</span>
+                    <button onclick="copyText(this.nextElementSibling.innerText)" class="hover:text-white transition-colors"><i class="fa-solid fa-copy"></i></button>
+                </div>
+                <div class="text-xs text-[#d2d2d7]">{{ linkedin_messages.m4_referral }}</div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-12 apple-card-glass border border-[rgba(255,255,255,0.08)]">
+        <p class="text-xs text-[#86868b] mb-3">Outreach templates will be generated when you tailor this role.</p>
+        <button onclick="tailorNow()" class="apple-btn-pill text-xs">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-[10px]"></i> Generate Outreach
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- TAB 8: DESCRIPTION -->
+<div id="tab-content-desc" class="apple-card-glass p-5 border border-[rgba(255,255,255,0.1)] hidden">
+    <h3 class="text-sm font-semibold text-white mb-3">Job Description</h3>
+    <div class="text-xs text-[#d2d2d7] leading-relaxed whitespace-pre-wrap font-sans">
+        {{ job.description|striptags }}
     </div>
 </div>
 
@@ -343,46 +499,138 @@
     let coverLetterLoaded = false;
     let interviewPrepLoaded = false;
     let skillGapLoaded = false;
+    let dossierLoaded = false;
 
     function switchTab(tab) {
-        document.getElementById('tab-content-resume').classList.add('hidden');
-        document.getElementById('tab-content-coverletter').classList.add('hidden');
-        document.getElementById('tab-content-prep').classList.add('hidden');
-        document.getElementById('tab-content-skillgap').classList.add('hidden');
-        document.getElementById('tab-content-outreach').classList.add('hidden');
-        document.getElementById('tab-content-desc').classList.add('hidden');
+        const tabs = ['resume', 'dossier', 'linkedin', 'coverletter', 'prep', 'skillgap', 'outreach', 'desc'];
+        tabs.forEach(t => {
+            const content = document.getElementById(`tab-content-${t}`);
+            const btn = document.getElementById(`tab-btn-${t}`);
+            if (content) content.classList.add('hidden');
+            if (btn) btn.className = 'pb-3 border-b-2 border-transparent text-[#86868b] hover:text-white transition-colors whitespace-nowrap';
+        });
 
-        document.getElementById('tab-btn-resume').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
-        document.getElementById('tab-btn-coverletter').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
-        document.getElementById('tab-btn-prep').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
-        document.getElementById('tab-btn-skillgap').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
-        document.getElementById('tab-btn-outreach').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
-        document.getElementById('tab-btn-desc').className = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+        const activeContent = document.getElementById(`tab-content-${tab}`);
+        const activeBtn = document.getElementById(`tab-btn-${tab}`);
+        if (activeContent) activeContent.classList.remove('hidden');
+        if (activeBtn) activeBtn.className = 'pb-3 border-b-2 border-[#0066cc] text-[#2997ff] font-semibold whitespace-nowrap';
 
-        if (tab === 'resume') {
-            document.getElementById('tab-content-resume').classList.remove('hidden');
-            document.getElementById('tab-btn-resume').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
-        } else if (tab === 'coverletter') {
-            document.getElementById('tab-content-coverletter').classList.remove('hidden');
-            document.getElementById('tab-btn-coverletter').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
-            if (!coverLetterLoaded) loadCoverLetter();
-        } else if (tab === 'prep') {
-            document.getElementById('tab-content-prep').classList.remove('hidden');
-            document.getElementById('tab-btn-prep').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
-            if (!interviewPrepLoaded) loadInterviewPrep();
-        } else if (tab === 'skillgap') {
-            document.getElementById('tab-content-skillgap').classList.remove('hidden');
-            document.getElementById('tab-btn-skillgap').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
-            if (!skillGapLoaded) loadSkillGap();
-        } else if (tab === 'outreach') {
-            document.getElementById('tab-content-outreach').classList.remove('hidden');
-            document.getElementById('tab-btn-outreach').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
-        } else if (tab === 'desc') {
-            document.getElementById('tab-content-desc').classList.remove('hidden');
-            document.getElementById('tab-btn-desc').className = 'pb-3 border-b-2 border-blue-500 text-blue-400 font-semibold';
-        }
+        if (tab === 'coverletter' && !coverLetterLoaded) loadCoverLetter();
+        if (tab === 'prep' && !interviewPrepLoaded) loadInterviewPrep();
+        if (tab === 'skillgap' && !skillGapLoaded) loadSkillGap();
+        if ((tab === 'dossier' || tab === 'linkedin') && !dossierLoaded) loadDossier();
     }
 
+    async function loadDossier(force = false) {
+        const loader = document.getElementById('dossier-loading');
+        const content = document.getElementById('dossier-content');
+        if (loader && !dossierLoaded) loader.classList.remove('hidden');
+
+        try {
+            const res = await fetch(`/api/jobs/${CURRENT_JOB_ID}/dossier`);
+            if (res.ok) {
+                const data = await res.json();
+                dossierLoaded = true;
+
+                // Render Overview
+                document.getElementById('dos-domain').innerText = data.domain || 'N/A';
+                document.getElementById('dos-archetype').innerText = data.archetype || 'Software Platform';
+                document.getElementById('dos-scale').innerText = data.scale_estimate || 'Growth Stage';
+                const curBadge = document.getElementById('dos-curated');
+                if (curBadge) {
+                    curBadge.innerText = data.is_curated ? 'Verified Enterprise' : 'Inferred Architecture';
+                }
+
+                // Render Tech Stack
+                const tech = data.tech_stack || {};
+                const beBox = document.getElementById('dos-tech-backend');
+                if (beBox) {
+                    beBox.innerHTML = (tech.backend || ['Python', 'FastAPI']).map(s => 
+                        `<span class="apple-status-chip bg-[#0066cc]/10 text-[#2997ff] border border-[#0066cc]/30 text-[11px]">${s}</span>`
+                    ).join('');
+                }
+                const dbBox = document.getElementById('dos-tech-database');
+                if (dbBox) {
+                    dbBox.innerHTML = (tech.database || ['PostgreSQL', 'Redis']).map(s => 
+                        `<span class="apple-status-chip bg-purple-500/10 text-purple-300 border border-purple-500/30 text-[11px]">${s}</span>`
+                    ).join('');
+                }
+                const infBox = document.getElementById('dos-tech-infra');
+                if (infBox) {
+                    infBox.innerHTML = (tech.infrastructure || ['AWS', 'Docker']).map(s => 
+                        `<span class="apple-status-chip bg-[#272729] text-[#a1a1a6] border border-[rgba(255,255,255,0.1)] text-[11px]">${s}</span>`
+                    ).join('');
+                }
+
+                // Render Challenges
+                const chalBox = document.getElementById('dos-challenges');
+                if (chalBox) {
+                    chalBox.innerHTML = (data.scale_challenges || []).map((c, i) => `
+                        <div class="flex items-start space-x-2 py-1">
+                            <span class="text-[#0066cc] dark:text-[#2997ff] font-bold">${i+1}.</span>
+                            <span>${c}</span>
+                        </div>
+                    `).join('');
+                }
+
+                // Render Priorities & Anti-Patterns
+                const persona = data.interviewer_persona || {};
+                const prioBox = document.getElementById('dos-persona-priorities');
+                if (prioBox) {
+                    prioBox.innerHTML = (persona.core_priorities || []).map(p => `
+                        <div class="flex items-start space-x-2">
+                            <span class="text-emerald-400">✓</span>
+                            <span>${p}</span>
+                        </div>
+                    `).join('');
+                }
+                const antiBox = document.getElementById('dos-persona-antipatterns');
+                if (antiBox) {
+                    antiBox.innerHTML = (persona.anti_patterns || []).map(a => `
+                        <div class="flex items-start space-x-2">
+                            <span class="text-rose-400">✕</span>
+                            <span>${a}</span>
+                        </div>
+                    `).join('');
+                }
+
+                // Render Reverse Interview Questions
+                const qBox = document.getElementById('dos-questions');
+                const qTextBox = document.getElementById('dos-questions-text');
+                if (qBox) {
+                    qBox.innerHTML = (data.reverse_interview_questions || []).map((q, i) => `
+                        <div class="bg-[#121214] p-3 rounded-xl border border-[rgba(255,255,255,0.06)]">
+                            <div class="text-[11px] font-semibold text-[#a1a1a6] mb-1">Question ${i+1}:</div>
+                            <div class="text-xs text-white">${q}</div>
+                        </div>
+                    `).join('');
+                }
+                if (qTextBox) {
+                    qTextBox.innerText = (data.reverse_interview_questions || []).map((q, i) => `${i+1}. ${q}`).join('\n\n');
+                }
+
+                // Render LinkedIn Assets
+                const outreach = data.linkedin_outreach || {};
+                const noteEl = document.getElementById('lnk-connect-note');
+                const charBadge = document.getElementById('lnk-char-badge');
+                if (noteEl) noteEl.innerText = outreach.connection_request_note || '';
+                if (charBadge) {
+                    const count = outreach.char_count_note || (outreach.connection_request_note ? outreach.connection_request_note.length : 0);
+                    charBadge.innerText = `${count} / 300 chars`;
+                    if (count > 295) {
+                        charBadge.className = 'apple-status-chip text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/30 font-mono';
+                    }
+                }
+                const inmailEl = document.getElementById('lnk-inmail-body');
+                if (inmailEl) inmailEl.innerText = outreach.recruiter_inmail || '';
+
+            }
+        } catch (e) {
+            console.error('Failed to load dossier:', e);
+        } finally {
+            if (loader) loader.classList.add('hidden');
+        }
+    }
 
     async function loadCoverLetter(force = false) {
         const textEl = document.getElementById('text-cover-letter');
@@ -444,25 +692,25 @@
 
                 if (!data.gaps || data.gaps.length === 0) {
                     displayEl.innerHTML = `
-                        <div class="p-6 text-center bg-slate-950 rounded-lg border border-emerald-500/30">
+                        <div class="p-6 text-center bg-[#121214] rounded-xl border border-emerald-500/30">
                             <i class="fa-solid fa-circle-check text-2xl text-emerald-400 mb-2"></i>
-                            <div class="text-sm font-bold text-white">Full Stack Alignment!</div>
-                            <div class="text-xs text-slate-400 mt-1">No significant technology gaps were found between your core competencies and this job posting.</div>
+                            <div class="text-sm font-semibold text-white">Full Stack Alignment!</div>
+                            <div class="text-xs text-[#86868b] mt-1">No significant technology gaps were found between your core competencies and this job posting.</div>
                         </div>
                     `;
                 } else {
                     let html = `
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
-                            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                                <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider mb-1">Matched Stack (${data.total_matched})</div>
+                            <div class="p-3.5 bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.08)]">
+                                <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider mb-2">Matched Stack (${data.total_matched})</div>
                                 <div class="flex flex-wrap gap-1">
-                                    ${(data.matched_skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[11px] font-medium">✓ ${s}</span>`).join('')}
+                                    ${(data.matched_skills || []).map(s => `<span class="apple-status-chip bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[11px]">✓ ${s}</span>`).join('')}
                                 </div>
                             </div>
-                            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                                <div class="text-[11px] font-semibold text-yellow-400 uppercase tracking-wider mb-1">Identified Gaps (${data.total_gaps})</div>
+                            <div class="p-3.5 bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.08)]">
+                                <div class="text-[11px] font-semibold text-yellow-400 uppercase tracking-wider mb-2">Identified Gaps (${data.total_gaps})</div>
                                 <div class="flex flex-wrap gap-1">
-                                    ${(data.gaps || []).map(g => `<span class="px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 text-[11px] font-medium">${g.skill}</span>`).join('')}
+                                    ${(data.gaps || []).map(g => `<span class="apple-status-chip bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 text-[11px]">${g.skill}</span>`).join('')}
                                 </div>
                             </div>
                         </div>
@@ -471,20 +719,20 @@
 
                     for (const gap of data.gaps) {
                         html += `
-                            <div class="bg-slate-950 p-4 rounded-lg border border-slate-800/90 hover:border-slate-700 transition-colors">
+                            <div class="bg-[#18181b] p-4 rounded-xl border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] transition-colors">
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="font-bold text-white text-xs flex items-center">
+                                    <span class="font-semibold text-white text-xs flex items-center">
                                         <i class="fa-solid fa-triangle-exclamation text-yellow-400 mr-2"></i> ${gap.skill}
-                                        <span class="ml-2 text-[10px] text-slate-400 font-normal">(${gap.category})</span>
+                                        <span class="ml-2 text-[10px] text-[#86868b] font-normal">(${gap.category})</span>
                                     </span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                    <span class="apple-status-chip text-[10px] bg-[#0066cc]/10 text-[#2997ff] border border-[#0066cc]/20">
                                         Adjacent: ${gap.adjacent_skill}
                                     </span>
                                 </div>
-                                <div class="text-xs text-slate-300 space-y-1.5">
-                                    <p><strong class="text-slate-400">Bridging Strategy:</strong> ${gap.bridging_talking_point}</p>
-                                    <p><strong class="text-slate-400">Proof of Concept:</strong> <span class="italic text-slate-300">${gap.quick_poc}</span></p>
-                                    <p><strong class="text-slate-400">Interview Focus:</strong> ${gap.interview_focus}</p>
+                                <div class="text-xs text-[#d2d2d7] space-y-1.5">
+                                    <p><strong class="text-[#86868b]">Bridging Strategy:</strong> ${gap.bridging_talking_point}</p>
+                                    <p><strong class="text-[#86868b]">Proof of Concept:</strong> <span class="italic text-[#a1a1a6]">${gap.quick_poc}</span></p>
+                                    <p><strong class="text-[#86868b]">Interview Focus:</strong> ${gap.interview_focus}</p>
                                 </div>
                             </div>
                         `;
@@ -502,7 +750,6 @@
             if (displayEl) displayEl.classList.remove('hidden');
         }
     }
-
 
     async function tailorNow(targetJobId = null) {
         const jobId = targetJobId || CURRENT_JOB_ID;
@@ -526,7 +773,7 @@
         } finally {
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Generate / Refresh Tailoring';
+                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-[11px]"></i> Tailor Resume & Pack';
             }
         }
     }
@@ -574,4 +821,3 @@
     }
 </script>
 {% endblock %}
-

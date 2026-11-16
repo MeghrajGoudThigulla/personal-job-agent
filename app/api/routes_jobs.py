@@ -13,6 +13,7 @@ from app.intelligence.cover_letter import CoverLetterGenerator
 from app.intelligence.interview_prep import InterviewPrepGenerator
 from app.intelligence.skill_gap import SkillGapDetector
 from app.intelligence.company_research import CompanyResearcher
+from app.intelligence.dossier import CompanyDossierGenerator
 from app.intelligence.salary_benchmarks import SalaryBenchmarker
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
@@ -226,6 +227,22 @@ async def get_job_company_research(job_id: int, db: AsyncSession = Depends(get_d
         description=job.description or ""
     )
     return {"job_id": job.id, **research}
+
+@router.get("/{job_id}/dossier")
+async def get_job_dossier(job_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(JobPosting).where(JobPosting.id == job_id))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    dossier_gen = CompanyDossierGenerator()
+    dossier = dossier_gen.generate_dossier(
+        company=job.company,
+        job_title=job.title,
+        job_url=job.url or "",
+        description=job.description or ""
+    )
+    return {"job_id": job.id, **dossier}
 
 @router.get("/{job_id}/salary-benchmark")
 async def get_job_salary_benchmark(job_id: int, db: AsyncSession = Depends(get_db)):

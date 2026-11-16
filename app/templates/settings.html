@@ -5,21 +5,26 @@
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-white">System Configuration</h1>
-        <p class="text-xs text-slate-400 mt-1">Manage LLM inference keys (Groq & NVIDIA NIM), real-time notification endpoints, and scraper schedules.</p>
+        <div class="flex items-center space-x-2 text-xs text-[#86868b] mb-1 font-normal tracking-[-0.1px]">
+            <a href="/" class="hover:text-[#0066cc] transition-colors"><i class="fa-solid fa-arrow-left mr-1"></i> Job Feed</a>
+            <span>•</span>
+            <span class="text-[#a1a1a6]">System Configuration</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-semibold text-white tracking-[-0.374px]">System Configuration</h1>
+        <p class="text-xs text-[#86868b] mt-1">Manage LLM inference keys (Groq & NVIDIA NIM), real-time notification endpoints, and scraper schedules.</p>
     </div>
 
     <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-6">
         <!-- LLM Settings -->
-        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
-            <h2 class="text-base font-bold text-white flex items-center mb-4">
-                <i class="fa-solid fa-microchip text-blue-400 mr-2"></i> LLM Inference Configuration
+        <div class="apple-card-glass border border-[rgba(255,255,255,0.08)] p-5">
+            <h2 class="text-sm font-semibold text-white flex items-center mb-4">
+                <i class="fa-solid fa-microchip text-[#0066cc] dark:text-[#2997ff] mr-2"></i> LLM Inference Configuration
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Active LLM Provider</label>
-                    <select id="llm_provider" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Active LLM Provider</label>
+                    <select id="llm_provider" class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
                         <option value="auto" {% if settings.LLM_PROVIDER == 'auto' %}selected{% endif %}>⚡ Auto-Failover (Groq ⟷ NVIDIA NIM)</option>
                         <option value="groq" {% if settings.LLM_PROVIDER == 'groq' %}selected{% endif %}>Groq Primary (Fastest Inference • Llama 3.3 70B)</option>
                         <option value="nvidia" {% if settings.LLM_PROVIDER == 'nvidia' %}selected{% endif %}>NVIDIA NIM Primary (Nemotron-3-Ultra / Llama 3.1)</option>
@@ -27,112 +32,112 @@
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Groq Model</label>
-                    <input type="text" id="groq_model" value="{{ settings.GROQ_MODEL }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Groq Model</label>
+                    <input type="text" id="groq_model" value="{{ settings.GROQ_MODEL }}" class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Groq API Key</label>
-                    <input type="password" id="groq_api_key" placeholder="gsk_..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Current: {{ current_settings.groq_api_key_masked or 'Not set' }}</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Groq API Key</label>
+                    <input type="password" id="groq_api_key" placeholder="gsk_..." class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Current: {{ current_settings.groq_api_key_masked or 'Not set' }}</span>
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">NVIDIA NIM Model</label>
-                    <input type="text" id="nvidia_nim_model" value="{{ settings.NVIDIA_NIM_MODEL }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">NVIDIA NIM Model</label>
+                    <input type="text" id="nvidia_nim_model" value="{{ settings.NVIDIA_NIM_MODEL }}" class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="block font-semibold text-slate-300 mb-1">NVIDIA NIM API Key</label>
-                    <input type="password" id="nvidia_nim_api_key" placeholder="nvapi-..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Current: {{ current_settings.nvidia_nim_api_key_masked or 'Not set' }} (Supports nvidia/nemotron-3-ultra-550b-a55b)</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">NVIDIA NIM API Key</label>
+                    <input type="password" id="nvidia_nim_api_key" placeholder="nvapi-..." class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Current: {{ current_settings.nvidia_nim_api_key_masked or 'Not set' }} (Supports nvidia/nemotron-3-ultra-550b-a55b)</span>
                 </div>
             </div>
         </div>
 
         <!-- Real-Time Notification Settings -->
-        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
-            <h2 class="text-base font-bold text-white flex items-center mb-4">
+        <div class="apple-card-glass border border-[rgba(255,255,255,0.08)] p-5">
+            <h2 class="text-sm font-semibold text-white flex items-center mb-4">
                 <i class="fa-solid fa-bell text-emerald-400 mr-2"></i> Real-Time Instant Notification Channels
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Telegram Bot Token</label>
-                    <input type="password" id="telegram_bot_token" placeholder="123456:ABC-DEF..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Current: {{ current_settings.telegram_bot_token_masked or 'Not set' }}</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Telegram Bot Token</label>
+                    <input type="password" id="telegram_bot_token" placeholder="123456:ABC-DEF..." class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Current: {{ current_settings.telegram_bot_token_masked or 'Not set' }}</span>
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Telegram Chat ID</label>
-                    <input type="text" id="telegram_chat_id" placeholder="e.g. 789012345" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Current: {{ current_settings.telegram_chat_id_masked or 'Not set' }}</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Telegram Chat ID</label>
+                    <input type="text" id="telegram_chat_id" placeholder="e.g. 789012345" class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Current: {{ current_settings.telegram_chat_id_masked or 'Not set' }}</span>
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="block font-semibold text-slate-300 mb-1">Discord Webhook URL</label>
-                    <input type="password" id="discord_webhook_url" placeholder="https://discord.com/api/webhooks/..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Current: {{ current_settings.discord_webhook_url_masked or 'Not set' }}</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Discord Webhook URL</label>
+                    <input type="password" id="discord_webhook_url" placeholder="https://discord.com/api/webhooks/..." class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Current: {{ current_settings.discord_webhook_url_masked or 'Not set' }}</span>
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="block font-semibold text-slate-300 mb-1">Slack Webhook URL</label>
-                    <input type="password" id="slack_webhook_url" placeholder="https://hooks.slack.com/services/..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Slack Webhook URL</label>
+                    <input type="password" id="slack_webhook_url" placeholder="https://hooks.slack.com/services/..." class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
                 </div>
             </div>
         </div>
 
         <!-- Job Boards (JobSpy Multi-Board Engine) -->
-        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
-            <h2 class="text-base font-bold text-white flex items-center mb-4">
+        <div class="apple-card-glass border border-[rgba(255,255,255,0.08)] p-5">
+            <h2 class="text-sm font-semibold text-white flex items-center mb-4">
                 <i class="fa-solid fa-earth-americas text-cyan-400 mr-2"></i> Multi-Board Job Aggregator (JobSpy)
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Active Job Boards</label>
-                    <input type="text" id="jobspy_sites" value="{{ settings.JOBSPY_SITES }}" placeholder="indeed,linkedin,naukri,glassdoor,google,zip_recruiter" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Supported: indeed, linkedin, naukri, glassdoor, google, zip_recruiter, bayt</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Active Job Boards</label>
+                    <input type="text" id="jobspy_sites" value="{{ settings.JOBSPY_SITES }}" placeholder="indeed,linkedin,naukri,glassdoor,google,zip_recruiter" class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Supported: indeed, linkedin, naukri, glassdoor, google, zip_recruiter, bayt</span>
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Results Wanted Per Search Term</label>
-                    <input type="number" id="jobspy_results_wanted" min="1" max="25" value="{{ settings.JOBSPY_RESULTS_WANTED }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Default: 5 jobs per keyword query per cycle.</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Results Wanted Per Search Term</label>
+                    <input type="number" id="jobspy_results_wanted" min="1" max="25" value="{{ settings.JOBSPY_RESULTS_WANTED }}" class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Default: 5 jobs per keyword query per cycle.</span>
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="block font-semibold text-slate-300 mb-1">Proxy URLs (Optional)</label>
-                    <input type="text" id="jobspy_proxies" value="{{ settings.JOBSPY_PROXIES }}" placeholder="http://user:pass@host:port,http://user:pass@host2:port" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Comma-separated HTTP/SOCKS5 proxies for rotating and bypassing IP rate limits.</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Proxy URLs (Optional)</label>
+                    <input type="text" id="jobspy_proxies" value="{{ settings.JOBSPY_PROXIES }}" placeholder="http://user:pass@host:port,http://user:pass@host2:port" class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Comma-separated HTTP/SOCKS5 proxies for rotating and bypassing IP rate limits.</span>
                 </div>
             </div>
         </div>
 
         <!-- Automation & Scheduler Settings -->
-        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
-            <h2 class="text-base font-bold text-white flex items-center mb-4">
+        <div class="apple-card-glass border border-[rgba(255,255,255,0.08)] p-5">
+            <h2 class="text-sm font-semibold text-white flex items-center mb-4">
                 <i class="fa-solid fa-clock text-amber-400 mr-2"></i> Scheduler & Thresholds
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Minimum Match Score for Instant Alert (%)</label>
-                    <input type="number" id="min_match_score_notify" min="0" max="100" value="{{ settings.MIN_MATCH_SCORE_NOTIFY }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Roles with score ≥ this value trigger Telegram/Discord alerts immediately.</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Minimum Match Score for Instant Alert (%)</label>
+                    <input type="number" id="min_match_score_notify" min="0" max="100" value="{{ settings.MIN_MATCH_SCORE_NOTIFY }}" class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Roles with score ≥ this value trigger Telegram/Discord alerts immediately.</span>
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Scraper Frequency (Minutes)</label>
-                    <input type="number" id="scrape_interval_minutes" min="5" max="1440" value="{{ settings.SCRAPE_INTERVAL_MINUTES }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
-                    <span class="text-[11px] text-slate-500 mt-1 block">Interval between background discovery sweeps.</span>
+                    <label class="block font-medium text-[#d2d2d7] mb-1.5">Scraper Frequency (Minutes)</label>
+                    <input type="number" id="scrape_interval_minutes" min="5" max="1440" value="{{ settings.SCRAPE_INTERVAL_MINUTES }}" class="w-full bg-[#121214] border border-[rgba(255,255,255,0.1)] rounded-xl p-2.5 text-[#f5f5f7] focus:outline-none focus:border-[#0066cc]">
+                    <span class="text-[11px] text-[#86868b] mt-1 block">Interval between background discovery sweeps.</span>
                 </div>
             </div>
         </div>
 
         <!-- Submit Button -->
         <div class="flex justify-end">
-            <button type="submit" id="btn-save" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold shadow-md shadow-blue-500/20 transition-all">
+            <button type="submit" id="btn-save" class="apple-btn-pill font-medium text-xs py-2 px-6">
                 Save & Apply Settings
             </button>
         </div>
@@ -199,4 +204,3 @@
     }
 </script>
 {% endblock %}
-
