@@ -6,6 +6,9 @@
 
 {% block subnav_actions %}
 <div class="flex items-center space-x-2">
+    <button onclick="toggleResumeVariantsCard()" class="apple-btn-ghost-pill text-xs py-1.5 px-3">
+        <i class="fa-solid fa-file-pdf text-[#2997ff] mr-1.5 text-xs"></i> Resumes
+    </button>
     <button onclick="toggleLinkedInCard()" class="apple-btn-ghost-pill text-xs py-1.5 px-3">
         <i class="fa-brands fa-linkedin text-[#0077b5] mr-1.5 text-xs"></i> Daily Post
     </button>
@@ -107,6 +110,91 @@
                 <button onclick="toggleLinkedInStatus()" id="btn-li-toggle-posted" class="hover:text-white transition-colors text-[11px]">
                     <i class="fa-regular fa-circle-check mr-1"></i> Mark as Published
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resume Portfolios Download Strip (Apple Glass) -->
+<div id="resume-variants-card" class="apple-card-glass p-5 mb-8 border border-[rgba(255,255,255,0.1)]">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-[rgba(255,255,255,0.08)] gap-3">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-[#0066cc]/15 text-[#2997ff] flex items-center justify-center text-lg">
+                <i class="fa-solid fa-file-invoice"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold text-white tracking-[-0.2px]">7 Specialized Resume Portfolios (1-Click Downloads)</h3>
+                <p class="text-xs text-[#86868b] mt-0.5">Updated with TFGenAPI, active product URLs (tfgenapi.ai, tfgsecurebank.com, mymapro.com, iyov.ai), and zero C++.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/api/tailor/variants/base/tex" target="_blank" class="apple-btn-pill bg-[#272729] hover:bg-[#333336] text-[#f5f5f7] border border-[rgba(255,255,255,0.12)] text-xs py-1.5 px-3">
+                <i class="fa-solid fa-code mr-1.5 text-[11px]"></i> Master .tex
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-center text-xs mt-4">
+        <div class="bg-[#18181b] p-3 rounded-xl border border-[rgba(255,255,255,0.08)] hover:border-[#0066cc]/50 transition-colors">
+            <span class="font-semibold text-white block mb-0.5">Backend</span>
+            <span class="text-[10px] text-[#86868b] block mb-2">FastAPI/Postgres</span>
+            <div class="flex justify-center gap-1.5">
+                <a href="/api/tailor/variants/backend/pdf" target="_blank" class="apple-status-chip bg-[#0066cc]/15 text-[#2997ff] text-[10px] py-0.5 px-2 font-bold">PDF</a>
+                <a href="/api/tailor/variants/backend/tex" target="_blank" class="apple-status-chip bg-[#272729] text-[#a1a1a6] text-[10px] py-0.5 px-2 font-mono">.tex</a>
+            </div>
+        </div>
+
+        <div class="bg-[#18181b] p-3 rounded-xl border border-[rgba(255,255,255,0.08)] hover:border-[#0066cc]/50 transition-colors">
+            <span class="font-semibold text-white block mb-0.5">AI / ML</span>
+            <span class="text-[10px] text-[#86868b] block mb-2">PaddleOCR/ONNX</span>
+            <div class="flex justify-center gap-1.5">
+                <a href="/api/tailor/variants/ai/pdf" target="_blank" class="apple-status-chip bg-[#0066cc]/15 text-[#2997ff] text-[10px] py-0.5 px-2 font-bold">PDF</a>
+                <a href="/api/tailor/variants/ai/tex" target="_blank" class="apple-status-chip bg-[#272729] text-[#a1a1a6] text-[10px] py-0.5 px-2 font-mono">.tex</a>
+            </div>
+        </div>
+
+        <div class="bg-[#18181b] p-3 rounded-xl border border-[rgba(255,255,255,0.08)] hover:border-[#0066cc]/50 transition-colors">
+            <span class="font-semibold text-white block mb-0.5">Mobile</span>
+            <span class="text-[10px] text-[#86868b] block mb-2">Flutter/Dart</span>
+            <div class="flex justify-center gap-1.5">
+                <a href="/api/tailor/variants/mobile/pdf" target="_blank" class="apple-status-chip bg-[#0066cc]/15 text-[#2997ff] text-[10px] py-0.5 px-2 font-bold">PDF</a>
+                <a href="/api/tailor/variants/mobile/tex" target="_blank" class="apple-status-chip bg-[#272729] text-[#a1a1a6] text-[10px] py-0.5 px-2 font-mono">.tex</a>
+            </div>
+        </div>
+
+        <div class="bg-[#18181b] p-3 rounded-xl border border-[rgba(255,255,255,0.08)] hover:border-[#0066cc]/50 transition-colors">
+            <span class="font-semibold text-white block mb-0.5">Full Stack</span>
+            <span class="text-[10px] text-[#86868b] block mb-2">React/FastAPI</span>
+            <div class="flex justify-center gap-1.5">
+                <a href="/api/tailor/variants/fullstack/pdf" target="_blank" class="apple-status-chip bg-[#0066cc]/15 text-[#2997ff] text-[10px] py-0.5 px-2 font-bold">PDF</a>
+                <a href="/api/tailor/variants/fullstack/tex" target="_blank" class="apple-status-chip bg-[#272729] text-[#a1a1a6] text-[10px] py-0.5 px-2 font-mono">.tex</a>
+            </div>
+        </div>
+
+        <div class="bg-[#18181b] p-3 rounded-xl border border-[rgba(255,255,255,0.08)] hover:border-[#0066cc]/50 transition-colors">
+            <span class="font-semibold text-white block mb-0.5">Frontend</span>
+            <span class="text-[10px] text-[#86868b] block mb-2">Next.js/TS</span>
+            <div class="flex justify-center gap-1.5">
+                <a href="/api/tailor/variants/frontend/pdf" target="_blank" class="apple-status-chip bg-[#0066cc]/15 text-[#2997ff] text-[10px] py-0.5 px-2 font-bold">PDF</a>
+                <a href="/api/tailor/variants/frontend/tex" target="_blank" class="apple-status-chip bg-[#272729] text-[#a1a1a6] text-[10px] py-0.5 px-2 font-mono">.tex</a>
+            </div>
+        </div>
+
+        <div class="bg-[#18181b] p-3 rounded-xl border border-[rgba(255,255,255,0.08)] hover:border-[#0066cc]/50 transition-colors">
+            <span class="font-semibold text-white block mb-0.5">Consulting</span>
+            <span class="text-[10px] text-[#86868b] block mb-2">Architecture</span>
+            <div class="flex justify-center gap-1.5">
+                <a href="/api/tailor/variants/consulting/pdf" target="_blank" class="apple-status-chip bg-[#0066cc]/15 text-[#2997ff] text-[10px] py-0.5 px-2 font-bold">PDF</a>
+                <a href="/api/tailor/variants/consulting/tex" target="_blank" class="apple-status-chip bg-[#272729] text-[#a1a1a6] text-[10px] py-0.5 px-2 font-mono">.tex</a>
+            </div>
+        </div>
+
+        <div class="bg-[#18181b] p-3 rounded-xl border border-[rgba(255,255,255,0.08)] hover:border-[#0066cc]/50 transition-colors">
+            <span class="font-semibold text-white block mb-0.5">Base</span>
+            <span class="text-[10px] text-[#86868b] block mb-2">Senior AI Dev</span>
+            <div class="flex justify-center gap-1.5">
+                <a href="/api/tailor/variants/base/pdf" target="_blank" class="apple-status-chip bg-[#0066cc]/15 text-[#2997ff] text-[10px] py-0.5 px-2 font-bold">PDF</a>
+                <a href="/api/tailor/variants/base/tex" target="_blank" class="apple-status-chip bg-[#272729] text-[#a1a1a6] text-[10px] py-0.5 px-2 font-mono">.tex</a>
             </div>
         </div>
     </div>
@@ -295,6 +383,13 @@
 
     function toggleLinkedInCard() {
         const card = document.getElementById('linkedin-daily-card');
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function toggleResumeVariantsCard() {
+        const card = document.getElementById('resume-variants-card');
         if (card) {
             card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }

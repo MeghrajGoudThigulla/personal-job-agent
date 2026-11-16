@@ -231,7 +231,7 @@ class PDFCompiler:
     </div>
     <div class="job-sub">
         <span>Threshing Floor Group, Hyderabad</span>
-        <span>tfgroup.ai</span>
+        <span><a href="https://tfgroup.ai/en">tfgroup.ai</a></span>
     </div>
     <ul>
         <li>Delivered backend infrastructure of 286 endpoints, 61+ database models, and 30+ Alembic/Prisma migrations across multiple production products, owning schema design end to end.</li>

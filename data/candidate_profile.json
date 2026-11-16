@@ -115,7 +115,7 @@
       ],
       "location": "Hyderabad, India",
       "outcomes": [
-        "Live on Google Play and App Store: IYOV AI Employee, Jobs, LMS, HRMS (Android + iOS); Medical Advisor and TFG SecureBanking on Google Play.",
+        "Live on Web, Google Play and App Store: IYOV AI (employee, portal, lms, hrms, crm.iyov.ai) and Android/iOS apps; Medical Advisor (mymapro.com) and TFG SecureBanking on Google Play.",
         "Prepared Android and iOS release builds and store submissions for 6 apps per platform, typically under one hour per platform, excluding store review.",
         "Deployed 50-100 applications to AWS EC2 (new rollouts and production updates), typically under 30 minutes each.",
         "Built the OCR and document-verification pipeline on PaddleOCR (ONNX Runtime), a 64-type document taxonomy and BGE-M3 embeddings; about 8 documents per minute, with an estimated 75% reduction in manual verification work.",
@@ -128,12 +128,14 @@
   ],
   "products": [
     {
-      "name": "TFG Verify",
+      "name": "TFGenAPI",
+      "website": "https://tfgenapi.ai/",
       "category": "BGV / KYC platform",
       "description": "FastAPI services with 206 API routes, 58 SQLAlchemy models and 25 Alembic migrations; Celery/Redis workers, signed webhooks and Row-Level Security."
     },
     {
       "name": "TFG SecureBanking",
+      "website": "https://tfgsecurebank.com/",
       "category": "Digital lending",
       "description": "Multi-tenant FastAPI backend with 174 REST endpoints, an Excel-driven credit rules engine (openpyxl, xlcalculator) and WeasyPrint sanction-letter PDFs."
     },
@@ -144,21 +146,26 @@
     },
     {
       "name": "Medical Advisor (Healthcare)",
+      "website": "https://mymapro.com/en",
       "category": "FastAPI Backend",
       "description": "FastAPI backend with 230 API routes (including WebSockets) and 47 migrations; JWT auth, Google Play Integrity nonce checks and PostgreSQL-to-Firestore sync for emergency workflows."
     },
     {
       "name": "Medical Advisor (Mobile & Admin)",
+      "website": "https://mymapro.com/en",
       "category": "Mobile & Web",
       "description": "Flutter app with 195 screen-directory files, Android release configuration (com.tfg.medicaladvisor, v1.0.1) and a Flutter Web admin console."
     },
     {
       "name": "TFG Corporate Website",
+      "website": "https://tfgroup.ai/en",
       "category": "Next.js Rebuild",
       "description": "11 App Router page routes across 6 locales, 17 permanent legacy redirects and an AI careers application flow; nginx reverse proxy and systemd deployment with rollback scripts."
     },
     {
       "name": "IYOV AI Assessments and Job Portal",
+      "website": "https://iyov.ai",
+      "portal_website": "https://portal.iyov.ai",
       "category": "Assessment Platform",
       "description": "Coding-assessment engine on the Piston execution sandbox (timeouts, fullscreen and tab-switch detection, dynamic risk scoring, daily attempt limits) and the candidate Job Portal."
     }

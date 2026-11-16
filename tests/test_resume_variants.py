@@ -92,12 +92,30 @@ def test_variant_files_on_disk():
         r"\textbf{Full Stack Engineer \& Senior AI Developer} \hfill July 2024 -- October 2026"
     )
 
+    required_urls = [
+        "https://tfgenapi.ai/",
+        "https://tfgroup.ai/en",
+        "https://tfgsecurebank.com/",
+        "https://mymapro.com/en",
+        "https://iyov.ai",
+        "https://hrms.iyov.ai",
+        "https://portal.iyov.ai",
+        "https://employee.iyov.ai",
+        "https://lms.iyov.ai",
+        "https://crm.iyov.ai",
+    ]
+
     for slug in ["base", "backend", "ai", "mobile", "fullstack", "frontend", "consulting"]:
         p = resumes_dir / f"resume_{slug}.tex"
         assert p.exists(), f"Resume file {p} does not exist"
         content = p.read_text(encoding="utf-8")
         assert "C++" not in content, f"C++ found in file {p}"
         assert expected_experience in content, f"Experience header missing in file {p}"
+        assert "TFGenAPI" in content, f"TFGenAPI missing in file {p}"
+        assert "TFG Verify" not in content, f"Old 'TFG Verify' still present in file {p}"
+
+        for url in required_urls:
+            assert url in content, f"Required url '{url}' missing in file {p}"
 
 
 @pytest.mark.asyncio

@@ -25,7 +25,7 @@ ENGINEERING_THEMES: List[Dict[str, Any]] = [
         "sample_hook": "Most teams overcomplicate microservices before they even need them. Here is how we scaled a single FastAPI service to 206 endpoints with zero lock contention.",
         "fallback_post": (
             "Most teams rush into microservices before their domain boundaries even settle.\n\n"
-            "While building TFG Verify, we kept our architecture lean: a single, modular FastAPI backend containing "
+            "While building TFGenAPI, we kept our architecture lean: a single, modular FastAPI backend containing "
             "206 API routes, 58 SQLAlchemy models, and 25 Alembic migrations.\n\n"
             "Key architectural choices that kept the system fast and maintainable:\n"
             "1. Row-Level Security (RLS) directly inside PostgreSQL for multi-tenant isolation, eliminating custom application authorization leaks.\n"

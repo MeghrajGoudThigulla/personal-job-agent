@@ -51,12 +51,12 @@
 % ===== Shared content pool. Edit a bullet here and every role variant picks it up. =====
 
 % ---- Projects (product header with two bullets each) ----
-\newcommand{\eA}{\item \textbf{TFG Verify (BGV/KYC platform):}
+\newcommand{\eA}{\item \textbf{\href{https://tfgenapi.ai/}{TFGenAPI} (BGV/KYC platform):}
   \begin{itemize}
   \item Built FastAPI services with 206 API routes, 58 SQLAlchemy models and 25 Alembic migrations.
   \item Implemented Celery/Redis workers, signed webhooks and Row-Level Security.
   \end{itemize}}
-\newcommand{\eB}{\item \textbf{TFG SecureBanking (digital lending):}
+\newcommand{\eB}{\item \textbf{\href{https://tfgsecurebank.com/}{TFG SecureBanking} (digital lending):}
   \begin{itemize}
   \item Built a multi-tenant FastAPI backend with 174 REST endpoints.
   \item Built an Excel-driven credit rules engine (openpyxl, xlcalculator) and WeasyPrint sanction-letter PDFs.
@@ -66,22 +66,22 @@
   \item Built a backend with 152 API routes, 92 SQLAlchemy models and 40 migrations.
   \item Implemented cart and checkout services, Razorpay webhook deduplication, idempotent refunds and eight RQ background jobs.
   \end{itemize}}
-\newcommand{\eD}{\item \textbf{Medical Advisor (healthcare):}
+\newcommand{\eD}{\item \textbf{\href{https://mymapro.com/en}{Medical Advisor} (healthcare):}
   \begin{itemize}
   \item Built a FastAPI backend with 230 API routes (including WebSockets) and 47 migrations.
   \item Implemented JWT auth, Google Play Integrity nonce checks and PostgreSQL-to-Firestore sync for emergency workflows.
   \end{itemize}}
-\newcommand{\eE}{\item \textbf{Medical Advisor (mobile and admin):}
+\newcommand{\eE}{\item \textbf{\href{https://mymapro.com/en}{Medical Advisor} (mobile and admin):}
   \begin{itemize}
   \item Built a Flutter app with 195 screen-directory files and an Android release configuration (com.tfg.medicaladvisor, v1.0.1).
   \item Built a Flutter Web admin console.
   \end{itemize}}
-\newcommand{\eM}{\item \textbf{TFG Corporate Website (Next.js rebuild):}
+\newcommand{\eM}{\item \textbf{\href{https://tfgroup.ai/en}{TFG Corporate Website} (Next.js rebuild):}
   \begin{itemize}
   \item Rebuilt the site in Next.js with 11 App Router page routes across 6 locales and 17 permanent legacy redirects.
   \item Built an AI careers application flow, with an nginx reverse proxy and systemd deployment with rollback scripts.
   \end{itemize}}
-\newcommand{\eN}{\item \textbf{IYOV AI Assessments and Job Portal:}
+\newcommand{\eN}{\item \textbf{\href{https://iyov.ai}{IYOV AI} Assessments and \href{https://portal.iyov.ai}{Job Portal}:}
   \begin{itemize}
   \item Built a coding-assessment engine on the Piston execution sandbox with timeouts, fullscreen and tab-switch detection, dynamic risk scoring and daily attempt limits.
   \item Delivered the candidate Job Portal.
@@ -91,11 +91,11 @@
 \newcommand{\eF}{\item Prepared Android and iOS release builds and store submissions for 6 apps per platform, typically under one hour per platform, excluding store review.}
 \newcommand{\eG}{\item Deployed 50--100 applications to AWS EC2 (new rollouts and production updates), typically under 30 minutes each.}
 \newcommand{\eH}{\item Built the OCR and document-verification pipeline on PaddleOCR (ONNX Runtime), a 64-type document taxonomy and BGE-M3 embeddings; about 8 documents per minute, with an estimated 75\% reduction in manual verification work.}
-\newcommand{\eI}{\item Built the India statutory payroll engine (PF, ESI, TDS, professional tax) for IYOV AI, eliminating manual calculation steps for an internal eight-employee payroll workflow.}
+\newcommand{\eI}{\item Built the India statutory payroll engine (PF, ESI, TDS, professional tax) for \href{https://iyov.ai}{IYOV AI}, eliminating manual calculation steps for an internal eight-employee payroll workflow.}
 \newcommand{\eJ}{\item Mentored 8 engineers through codebase walkthroughs, architecture explanations and code reviews; acted as technical consultant to stakeholders, turning ambiguous requirements into delivery milestones.}
 \newcommand{\eK}{\item Contributed to raising backend pytest coverage from 43\% to 73.4\%.}
 \newcommand{\eL}{\item Maintained GitHub Actions workflows and Docker configurations for backend deployment, staging and canary releases.}
-\newcommand{\eP}{\item \textbf{Live on Google Play and the App Store:} IYOV AI \href{https://play.google.com/store/apps/details?id=ai.iyov.employee}{Employee}, \href{https://play.google.com/store/apps/details?id=ai.iyov.jobs}{Jobs}, \href{https://play.google.com/store/apps/details?id=ai.iyov.lms}{LMS} and \href{https://play.google.com/store/apps/details?id=ai.iyov.hrms}{HRMS} apps on Android, with Employee (\href{https://apps.apple.com/in/app/iyov-employee/id6798276433}{App Store}), LMS (\href{https://apps.apple.com/in/app/iyov-lms/id6800318336}{App Store}) and HRMS (\href{https://apps.apple.com/in/app/iyov-hrms/id6798589436}{App Store}) on iOS; \href{https://play.google.com/store/apps/details?id=com.tfg.medicaladvisor}{Medical Advisor} and \href{https://play.google.com/store/apps/details?id=com.tfg.securebanking}{TFG SecureBanking} on Google Play.}
+\newcommand{\eP}{\item \textbf{Live on Google Play and the App Store:} \href{https://iyov.ai}{IYOV AI} \href{https://play.google.com/store/apps/details?id=ai.iyov.employee}{Employee} (\href{https://employee.iyov.ai}{web}), \href{https://play.google.com/store/apps/details?id=ai.iyov.jobs}{Jobs} (\href{https://portal.iyov.ai}{portal}), \href{https://play.google.com/store/apps/details?id=ai.iyov.lms}{LMS} (\href{https://lms.iyov.ai}{web}), \href{https://play.google.com/store/apps/details?id=ai.iyov.hrms}{HRMS} (\href{https://hrms.iyov.ai}{web}) and \href{https://crm.iyov.ai}{CRM} apps on Android, with Employee (\href{https://apps.apple.com/in/app/iyov-employee/id6798276433}{App Store}), LMS (\href{https://apps.apple.com/in/app/iyov-lms/id6800318336}{App Store}) and HRMS (\href{https://apps.apple.com/in/app/iyov-hrms/id6798589436}{App Store}) on iOS; \href{https://mymapro.com/en}{Medical Advisor} (\href{https://play.google.com/store/apps/details?id=com.tfg.medicaladvisor}{Play Store}) and \href{https://tfgsecurebank.com/}{TFG SecureBanking} (\href{https://play.google.com/store/apps/details?id=com.tfg.securebanking}{Play Store}).}
 
 % ---- Skill rows (label & content) ----
 \newcommand{\sLang}{Languages & Python, Dart, JavaScript, TypeScript, C\#, SQL \\}
