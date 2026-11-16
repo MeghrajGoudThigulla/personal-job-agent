@@ -166,3 +166,22 @@ class SeenJob(Base):
             "first_seen_at": self.first_seen_at.isoformat() if self.first_seen_at else None,
             "last_seen_at": self.last_seen_at.isoformat() if self.last_seen_at else None,
         }
+
+
+class SeenEmail(Base):
+    __tablename__ = "seen_emails"
+
+    message_id = Column(String(255), primary_key=True)
+    account = Column(String(50), nullable=False)
+    subject = Column(String(512), default="")
+    category = Column(String(100), default="STATUS_UPDATE")
+    notified_at = Column(UTCDateTime, default=utcnow, nullable=False)
+
+    def to_dict(self):
+        return {
+            "message_id": self.message_id,
+            "account": self.account,
+            "subject": self.subject,
+            "category": self.category,
+            "notified_at": self.notified_at.isoformat() if self.notified_at else None,
+        }

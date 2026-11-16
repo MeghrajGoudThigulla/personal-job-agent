@@ -96,6 +96,18 @@ class Settings(BaseSettings):
     SMTP_PASS: str = os.getenv("SMTP_PASS", "")
     SMTP_TO: str = os.getenv("SMTP_TO", "")
 
+    # Email Monitor (Gmail & Outlook IMAP for Job Updates)
+    EMAIL_MONITOR_ENABLED: bool = os.getenv("EMAIL_MONITOR_ENABLED", "false").lower() in ("true", "1", "yes")
+    EMAIL_CHECK_INTERVAL_MINUTES: int = int(os.getenv("EMAIL_CHECK_INTERVAL_MINUTES", "15"))
+    GMAIL_IMAP_HOST: str = os.getenv("GMAIL_IMAP_HOST", "imap.gmail.com")
+    GMAIL_IMAP_PORT: int = int(os.getenv("GMAIL_IMAP_PORT", "993"))
+    GMAIL_USER: str = os.getenv("GMAIL_USER", "")
+    GMAIL_APP_PASSWORD: str = os.getenv("GMAIL_APP_PASSWORD", "")
+    OUTLOOK_IMAP_HOST: str = os.getenv("OUTLOOK_IMAP_HOST", "outlook.office365.com")
+    OUTLOOK_IMAP_PORT: int = int(os.getenv("OUTLOOK_IMAP_PORT", "993"))
+    OUTLOOK_USER: str = os.getenv("OUTLOOK_USER", "")
+    OUTLOOK_APP_PASSWORD: str = os.getenv("OUTLOOK_APP_PASSWORD", "")
+
     # Paths
     BASE_DIR: Path = BASE_DIR
     DATA_DIR: Path = DATA_DIR

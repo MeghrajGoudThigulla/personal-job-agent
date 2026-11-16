@@ -18,6 +18,7 @@ from app.api.routes_scraper import router as scraper_router
 from app.api.routes_settings import router as settings_router
 from app.api.routes_tailor import router as tailor_router
 from app.api.routes_trace import router as trace_router
+from app.api.routes_email import router as email_router
 from app.config import settings
 from app.core.clock import format_ist, to_ist, utcnow
 from app.core.database import async_session_factory, get_db, init_db
@@ -84,6 +85,7 @@ app.include_router(tailor_router)
 app.include_router(scraper_router)
 app.include_router(settings_router)
 app.include_router(trace_router)
+app.include_router(email_router)
 
 # Mount static files if present
 static_dir = Path(__file__).resolve().parent / "static"
