@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
 Short-lived subprocess runner for python-jobspy.
-Runs Indeed/multi-board job scrapes and prints JSON output to stdout.
+Runs multi-board job scrapes (Indeed, LinkedIn, ZipRecruiter, Glassdoor, Google)
+and prints JSON output to stdout.
 Running in a subprocess ensures all memory consumed by pandas, numpy, and curl_cffi
 is immediately reclaimed by the OS upon process exit.
 """
+
+from __future__ import annotations
 
 import argparse
 import json
 import logging
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 logging.basicConfig(level=logging.WARNING, stream=sys.stderr)
 logger = logging.getLogger("run_jobspy")
@@ -19,14 +22,18 @@ DEFAULT_SEARCH_TERMS = [
     "Python Developer",
     "FastAPI Developer",
     "Full Stack Python React",
-    "Flutter Developer"
+    "Flutter Developer",
 ]
+
 
 def run_jobspy(
     search_terms: List[str],
+    sites: Optional[List[str]] = None,
     location: str = "India",
+    country: str = "india",
     results_wanted: int = 5,
     hours_old: int = 72,
+    proxies: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     try:
         from jobspy import scrape_jobs
@@ -34,19 +41,25 @@ def run_jobspy(
         logger.warning(f"python-jobspy or dependencies not installed: {e}")
         return []
 
+    target_sites = sites or ["indeed"]
     jobs = []
     seen_urls = set()
 
     for term in search_terms:
         try:
-            df = scrape_jobs(
-                site_name=["indeed"],
-                search_term=term,
-                location=location,
-                results_wanted=results_wanted,
-                hours_old=hours_old,
-                country_indeed="india",
-            )
+            kwargs: Dict[str, Any] = {
+                "site_name": target_sites,
+                "search_term": term,
+                "location": location,
+                "results_wanted": results_wanted,
+                "hours_old": hours_old,
+                "country_indeed": country,
+                "description_format": "markdown",
+            }
+            if proxies:
+                kwargs["proxies"] = proxies
+
+            df = scrape_jobs(**kwargs)
             if df is not None and not df.empty:
                 for _, row in df.iterrows():
                     url = str(row.get("job_url", "")).strip()
@@ -59,30 +72,38 @@ def run_jobspy(
                         "location": str(row.get("location", location)).strip(),
                         "remote_status": "Remote" if row.get("is_remote") else "Hybrid/Onsite",
                         "url": url,
-                        "source_platform": str(row.get("site", "JobSpy")),
-                        "description": str(row.get("description", ""))[:3000],
+                        "source_platform": str(row.get("site", "JobSpy")).capitalize(),
+                        "description": str(row.get("description", ""))[:4000],
                         "posted_date": str(row.get("date_posted", "")),
                     })
         except Exception as e:
-            logger.warning(f"JobSpy scrape error for '{term}': {e}")
+            logger.warning(f"JobSpy scrape error for term '{term}' on sites {target_sites}: {e}")
 
     return jobs
+
 
 def main():
     parser = argparse.ArgumentParser(description="Run python-jobspy in a short-lived subprocess.")
     parser.add_argument("--terms", nargs="*", default=DEFAULT_SEARCH_TERMS, help="Search terms")
+    parser.add_argument("--sites", nargs="*", default=["indeed"], help="Sites to scrape (indeed, linkedin, zip_recruiter, glassdoor, google)")
     parser.add_argument("--location", default="India", help="Search location")
+    parser.add_argument("--country", default="india", help="Country for Indeed")
     parser.add_argument("--results-wanted", type=int, default=5, help="Results wanted per term (default 5)")
     parser.add_argument("--hours-old", type=int, default=72, help="Max hours old")
+    parser.add_argument("--proxies", nargs="*", default=None, help="Proxy URLs for rotation")
     args = parser.parse_args()
 
     results = run_jobspy(
         search_terms=args.terms,
+        sites=args.sites,
         location=args.location,
+        country=args.country,
         results_wanted=args.results_wanted,
         hours_old=args.hours_old,
+        proxies=args.proxies,
     )
     print(json.dumps(results))
+
 
 if __name__ == "__main__":
     main()

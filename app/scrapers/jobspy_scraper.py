@@ -27,14 +27,22 @@ class JobSpyScraper(BaseScraper):
             logger.warning(f"JobSpy runner script not found at {script_path}. Skipping.")
             return []
 
+        sites = [s.strip() for s in settings.JOBSPY_SITES.split(",") if s.strip()] or ["indeed"]
         cmd = [
             sys.executable,
             str(script_path),
-            "--results-wanted", "5",
+            "--results-wanted", str(settings.JOBSPY_RESULTS_WANTED),
             "--location", "India",
+            "--country", "india",
+            "--sites", *sites,
         ]
 
-        logger.info("Executing JobSpy scraper in a short-lived subprocess...")
+        if settings.JOBSPY_PROXIES:
+            proxies = [p.strip() for p in settings.JOBSPY_PROXIES.split(",") if p.strip()]
+            if proxies:
+                cmd.extend(["--proxies", *proxies])
+
+        logger.info(f"Executing JobSpy scraper for sites {sites} in a short-lived subprocess...")
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
