@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Short-lived subprocess runner for python-jobspy.
-Runs multi-board job scrapes (Indeed, LinkedIn, ZipRecruiter, Glassdoor, Google)
-and prints JSON output to stdout.
+Runs multi-board job scrapes across Indeed, LinkedIn, Naukri, Glassdoor, Google Jobs,
+and ZipRecruiter, and prints JSON output to stdout.
 Running in a subprocess ensures all memory consumed by pandas, numpy, and curl_cffi
 is immediately reclaimed by the OS upon process exit.
 """
@@ -18,12 +18,38 @@ from typing import Any, Dict, List, Optional
 logging.basicConfig(level=logging.WARNING, stream=sys.stderr)
 logger = logging.getLogger("run_jobspy")
 
+SUPPORTED_SITES = {
+    "indeed", "linkedin", "naukri", "glassdoor", "google",
+    "zip_recruiter", "bayt", "bdjobs", "hellowork"
+}
+
+SITE_NAMES_MAP = {
+    "indeed": "Indeed",
+    "linkedin": "LinkedIn",
+    "naukri": "Naukri",
+    "glassdoor": "Glassdoor",
+    "google": "Google Jobs",
+    "zip_recruiter": "ZipRecruiter",
+    "bayt": "Bayt",
+    "bdjobs": "BDJobs",
+    "hellowork": "HelloWork",
+}
+
 DEFAULT_SEARCH_TERMS = [
     "Python Developer",
     "FastAPI Developer",
     "Full Stack Python React",
     "Flutter Developer",
 ]
+
+
+def normalize_site_name(site: str) -> str:
+    clean = site.strip().lower()
+    if clean in ("ziprecruiter", "zip-recruiter"):
+        return "zip_recruiter"
+    if clean in ("googlejobs", "google-jobs"):
+        return "google"
+    return clean
 
 
 def run_jobspy(
@@ -41,7 +67,14 @@ def run_jobspy(
         logger.warning(f"python-jobspy or dependencies not installed: {e}")
         return []
 
-    target_sites = sites or ["indeed"]
+    raw_sites = sites or ["indeed", "linkedin", "naukri", "glassdoor"]
+    normalized_sites = [
+        normalize_site_name(s)
+        for s in raw_sites
+        if normalize_site_name(s) in SUPPORTED_SITES
+    ]
+    target_sites = normalized_sites or ["indeed"]
+
     jobs = []
     seen_urls = set()
 
@@ -66,13 +99,17 @@ def run_jobspy(
                     if not url or url in seen_urls:
                         continue
                     seen_urls.add(url)
+
+                    raw_site = str(row.get("site", "jobspy")).lower()
+                    platform_name = SITE_NAMES_MAP.get(raw_site, raw_site.capitalize())
+
                     jobs.append({
                         "title": str(row.get("title", "")).strip(),
                         "company": str(row.get("company", "")).strip(),
                         "location": str(row.get("location", location)).strip(),
                         "remote_status": "Remote" if row.get("is_remote") else "Hybrid/Onsite",
                         "url": url,
-                        "source_platform": str(row.get("site", "JobSpy")).capitalize(),
+                        "source_platform": platform_name,
                         "description": str(row.get("description", ""))[:4000],
                         "posted_date": str(row.get("date_posted", "")),
                     })
@@ -85,7 +122,7 @@ def run_jobspy(
 def main():
     parser = argparse.ArgumentParser(description="Run python-jobspy in a short-lived subprocess.")
     parser.add_argument("--terms", nargs="*", default=DEFAULT_SEARCH_TERMS, help="Search terms")
-    parser.add_argument("--sites", nargs="*", default=["indeed"], help="Sites to scrape (indeed, linkedin, zip_recruiter, glassdoor, google)")
+    parser.add_argument("--sites", nargs="*", default=["indeed", "linkedin", "naukri", "glassdoor"], help="Sites to scrape")
     parser.add_argument("--location", default="India", help="Search location")
     parser.add_argument("--country", default="india", help="Country for Indeed")
     parser.add_argument("--results-wanted", type=int, default=5, help="Results wanted per term (default 5)")

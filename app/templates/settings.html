@@ -82,6 +82,33 @@
             </div>
         </div>
 
+        <!-- Job Boards (JobSpy Multi-Board Engine) -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+            <h2 class="text-base font-bold text-white flex items-center mb-4">
+                <i class="fa-solid fa-earth-americas text-cyan-400 mr-2"></i> Multi-Board Job Aggregator (JobSpy)
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Active Job Boards</label>
+                    <input type="text" id="jobspy_sites" value="{{ settings.JOBSPY_SITES }}" placeholder="indeed,linkedin,naukri,glassdoor,google,zip_recruiter" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+                    <span class="text-[11px] text-slate-500 mt-1 block">Supported: indeed, linkedin, naukri, glassdoor, google, zip_recruiter, bayt</span>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Results Wanted Per Search Term</label>
+                    <input type="number" id="jobspy_results_wanted" min="1" max="25" value="{{ settings.JOBSPY_RESULTS_WANTED }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+                    <span class="text-[11px] text-slate-500 mt-1 block">Default: 5 jobs per keyword query per cycle.</span>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block font-semibold text-slate-300 mb-1">Proxy URLs (Optional)</label>
+                    <input type="text" id="jobspy_proxies" value="{{ settings.JOBSPY_PROXIES }}" placeholder="http://user:pass@host:port,http://user:pass@host2:port" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+                    <span class="text-[11px] text-slate-500 mt-1 block">Comma-separated HTTP/SOCKS5 proxies for rotating and bypassing IP rate limits.</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Automation & Scheduler Settings -->
         <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
             <h2 class="text-base font-bold text-white flex items-center mb-4">
@@ -126,7 +153,10 @@
             groq_model: document.getElementById('groq_model').value,
             nvidia_nim_model: document.getElementById('nvidia_nim_model').value,
             min_match_score_notify: parseInt(document.getElementById('min_match_score_notify').value),
-            scrape_interval_minutes: parseInt(document.getElementById('scrape_interval_minutes').value)
+            scrape_interval_minutes: parseInt(document.getElementById('scrape_interval_minutes').value),
+            jobspy_sites: document.getElementById('jobspy_sites').value,
+            jobspy_results_wanted: parseInt(document.getElementById('jobspy_results_wanted').value),
+            jobspy_proxies: document.getElementById('jobspy_proxies').value
         };
 
         const gKey = document.getElementById('groq_api_key').value;

@@ -65,6 +65,19 @@ async def test_settings_and_trace_views():
         assert res_trace.status_code == 200
         assert "text/html" in res_trace.headers.get("content-type", "")
 
+        res_api_settings = await ac.get("/api/settings", headers=AUTH_HEADERS)
+        assert res_api_settings.status_code == 200
+        data = res_api_settings.json()
+        assert "jobspy_sites" in data
+        assert "jobspy_results_wanted" in data
+
+        res_update = await ac.post("/api/settings", json={"jobspy_sites": "naukri,linkedin", "jobspy_results_wanted": 10}, headers=AUTH_HEADERS)
+        assert res_update.status_code == 200
+        assert res_update.json()["success"] is True
+        assert "JOBSPY_SITES" in res_update.json()["updated_keys"]
+
+
+
 @pytest.mark.asyncio
 async def test_job_detail_endpoint():
     await init_db()

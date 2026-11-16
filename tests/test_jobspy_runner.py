@@ -42,3 +42,24 @@ async def test_jobspy_scraper_cmd_construction(monkeypatch):
     assert "--sites indeed linkedin" in cmd_str
     assert "--proxies http://proxy1:8080 http://proxy2:8080" in cmd_str
     assert "--country india" in cmd_str
+
+
+def test_site_normalization_and_mapping():
+    from scripts.run_jobspy import normalize_site_name, SITE_NAMES_MAP, SUPPORTED_SITES
+
+    assert normalize_site_name("naukri") == "naukri"
+    assert normalize_site_name("LinkedIn") == "linkedin"
+    assert normalize_site_name("ziprecruiter") == "zip_recruiter"
+    assert normalize_site_name("google-jobs") == "google"
+    assert normalize_site_name("glassdoor") == "glassdoor"
+
+    assert "naukri" in SUPPORTED_SITES
+    assert "linkedin" in SUPPORTED_SITES
+    assert "glassdoor" in SUPPORTED_SITES
+    assert "google" in SUPPORTED_SITES
+
+    assert SITE_NAMES_MAP["naukri"] == "Naukri"
+    assert SITE_NAMES_MAP["linkedin"] == "LinkedIn"
+    assert SITE_NAMES_MAP["glassdoor"] == "Glassdoor"
+    assert SITE_NAMES_MAP["google"] == "Google Jobs"
+

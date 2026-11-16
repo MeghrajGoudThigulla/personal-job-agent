@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     AUTO_CLEANUP_ENABLED: bool = os.getenv("AUTO_CLEANUP_ENABLED", "true").lower() in ("true", "1")
     PDF_COMPILE_ENABLED: bool = os.getenv("PDF_COMPILE_ENABLED", "true").lower() in ("true", "1", "yes")
     JOBSPY_ENABLED: bool = os.getenv("JOBSPY_ENABLED", "true").lower() in ("true", "1", "yes")
-    JOBSPY_SITES: str = os.getenv("JOBSPY_SITES", "indeed")
+    JOBSPY_SITES: str = os.getenv("JOBSPY_SITES", "indeed,linkedin,naukri,glassdoor")
     JOBSPY_PROXIES: str = os.getenv("JOBSPY_PROXIES", "")
     JOBSPY_RESULTS_WANTED: int = int(os.getenv("JOBSPY_RESULTS_WANTED", "5"))
 

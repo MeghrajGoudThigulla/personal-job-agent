@@ -22,6 +22,9 @@ class SettingsUpdate(BaseModel):
     slack_webhook_url: Optional[str] = None
     min_match_score_notify: Optional[int] = None
     scrape_interval_minutes: Optional[int] = None
+    jobspy_sites: Optional[str] = None
+    jobspy_results_wanted: Optional[int] = None
+    jobspy_proxies: Optional[str] = None
 
 @router.get("")
 async def get_current_settings(db: AsyncSession = Depends(get_db)):
@@ -41,7 +44,10 @@ async def get_current_settings(db: AsyncSession = Depends(get_db)):
         "discord_webhook_url_masked": mask(settings.DISCORD_WEBHOOK_URL),
         "slack_webhook_url_masked": mask(settings.SLACK_WEBHOOK_URL),
         "min_match_score_notify": settings.MIN_MATCH_SCORE_NOTIFY,
-        "scrape_interval_minutes": settings.SCRAPE_INTERVAL_MINUTES
+        "scrape_interval_minutes": settings.SCRAPE_INTERVAL_MINUTES,
+        "jobspy_sites": settings.JOBSPY_SITES,
+        "jobspy_results_wanted": settings.JOBSPY_RESULTS_WANTED,
+        "jobspy_proxies": settings.JOBSPY_PROXIES,
     }
 
 @router.post("")
@@ -81,6 +87,15 @@ async def update_settings(payload: SettingsUpdate, db: AsyncSession = Depends(ge
     if payload.scrape_interval_minutes is not None:
         settings.SCRAPE_INTERVAL_MINUTES = payload.scrape_interval_minutes
         updated["SCRAPE_INTERVAL_MINUTES"] = str(payload.scrape_interval_minutes)
+    if payload.jobspy_sites is not None:
+        settings.JOBSPY_SITES = payload.jobspy_sites
+        updated["JOBSPY_SITES"] = payload.jobspy_sites
+    if payload.jobspy_results_wanted is not None:
+        settings.JOBSPY_RESULTS_WANTED = payload.jobspy_results_wanted
+        updated["JOBSPY_RESULTS_WANTED"] = str(payload.jobspy_results_wanted)
+    if payload.jobspy_proxies is not None:
+        settings.JOBSPY_PROXIES = payload.jobspy_proxies
+        updated["JOBSPY_PROXIES"] = payload.jobspy_proxies
 
     # Persist in DB
     for k, v in updated.items():
