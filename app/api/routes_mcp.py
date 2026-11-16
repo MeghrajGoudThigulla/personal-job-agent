@@ -88,6 +88,18 @@ MCP_TOOLS_DEFINITIONS: List[Dict[str, Any]] = [
         }
     },
     {
+        "name": "research_company",
+        "description": "Research public domain signals, architectural archetype, and strategic interview discussion angles for a job posting.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "job_id": {"type": "integer", "description": "The unique integer ID of the job posting."}
+            },
+            "required": ["job_id"]
+        }
+    },
+
+    {
         "name": "update_application_stage",
         "description": "Update the Kanban application stage, status, or notes for a job posting.",
         "inputSchema": {
@@ -323,6 +335,25 @@ async def _execute_tool(tool_name: str, args: Dict[str, Any], db: AsyncSession) 
             missing_skills=missing_skills
         )
         return json.dumps(analysis, indent=2)
+
+    elif tool_name == "research_company":
+        job_id = int(args.get("job_id", 0))
+        stmt = select(JobPosting).where(JobPosting.id == job_id)
+        res = await db.execute(stmt)
+        job = res.scalar_one_or_none()
+        if not job:
+            return f"Job with id {job_id} not found."
+
+        from app.intelligence.company_research import CompanyResearcher
+        researcher = CompanyResearcher()
+        research = researcher.research_company(
+            company=job.company,
+            job_title=job.title,
+            job_url=job.url or "",
+            description=job.description or ""
+        )
+        return json.dumps(research, indent=2)
+
 
     elif tool_name == "update_application_stage":
         job_id = int(args.get("job_id", 0))
