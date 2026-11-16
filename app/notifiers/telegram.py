@@ -57,6 +57,11 @@ class TelegramNotifier:
             f"🔗 [Direct Apply Link]({url})\n"
         )
 
+        cover_letter = job_data.get("cover_letter")
+        if cover_letter:
+            clean_cl = str(cover_letter).replace("```", "'''").strip()
+            text += f"\n📝 *Quick-Copy Cover Letter:*\n```{clean_cl}```\n"
+
         api_url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
         payload = {
             "chat_id": self.chat_id,
@@ -77,4 +82,29 @@ class TelegramNotifier:
             sanitized_err = raw_err.replace(token, "[REDACTED_BOT_TOKEN]") if token else raw_err
             logger.error(f"Failed to send Telegram notification: {sanitized_err}")
             await log_audit_event("telegram_notification", {"job_id": job_id, "error": sanitized_err}, "error")
+            return False
+
+    async def send_message(self, text: str, parse_mode: str = "Markdown") -> bool:
+        """Sends an arbitrary message (e.g. urgent email alerts) to Telegram."""
+        if not self.is_configured:
+            return False
+
+        api_url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
+        payload = {
+            "chat_id": self.chat_id,
+            "text": text,
+            "parse_mode": parse_mode,
+            "disable_web_page_preview": False,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post(api_url, json=payload)
+                res.raise_for_status()
+                return True
+        except Exception as e:
+            raw_err = str(e)
+            token = self.bot_token
+            sanitized_err = raw_err.replace(token, "[REDACTED_BOT_TOKEN]") if token else raw_err
+            logger.error(f"Failed to send Telegram message: {sanitized_err}")
             return False

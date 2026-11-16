@@ -18,6 +18,7 @@ from app.intelligence.outreach_generator import OutreachGenerator
 from app.intelligence.pdf_compiler import PDFCompiler
 from app.intelligence.liveness import posting_is_closed
 from app.intelligence.posting_guard import PostingGuard
+from app.intelligence.cover_letter import CoverLetterGenerator
 from app.notifiers.dispatcher import NotificationDispatcher
 from app.scrapers.base import parse_posted_date
 from app.scrapers.direct_ats import DirectATSScraper
@@ -43,6 +44,7 @@ class ScraperEngine:
         self.pdf_compiler = PDFCompiler()
         self.notifier = NotificationDispatcher()
         self.guard = PostingGuard()
+        self.cover_letter_gen = CoverLetterGenerator()
         self._cycle_lock = cycle_lock or ScraperEngine._shared_cycle_lock
 
         # Initialize scrapers
@@ -284,6 +286,18 @@ class ScraperEngine:
 
                 alert_payload = hm["job_dict"]
                 alert_payload["matched_skills"] = hm["eval_res"].get("matched_skills", [])
+
+                # Generate text-only cover letter for Telegram quick copy
+                try:
+                    cover_letter_text = await self.cover_letter_gen.generate(
+                        job_title=hm["title"],
+                        company=hm["company"],
+                        description=hm.get("description", ""),
+                        matched_skills=alert_payload["matched_skills"],
+                    )
+                    alert_payload["cover_letter"] = cover_letter_text
+                except Exception as cl_err:
+                    logger.debug(f"Cover letter generation error for job {job_id}: {cl_err}")
 
                 # 1. Fire Real-time Notification
                 if has_notifier:
