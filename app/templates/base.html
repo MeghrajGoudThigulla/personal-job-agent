@@ -59,6 +59,9 @@
                 <a href="/" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.url.path == '/' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
                     <i class="fa-solid fa-briefcase mr-1.5 text-xs"></i> Job Feed
                 </a>
+                <a href="/tracker" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.url.path == '/tracker' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i class="fa-solid fa-table-columns mr-1.5 text-xs"></i> Kanban
+                </a>
                 <a href="/trace" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.url.path == '/trace' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
                     <i class="fa-solid fa-clipboard-list mr-1.5 text-xs"></i> Audit Trace
                 </a>

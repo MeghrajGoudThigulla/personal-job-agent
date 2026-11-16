@@ -19,6 +19,7 @@ from app.api.routes_settings import router as settings_router
 from app.api.routes_tailor import router as tailor_router
 from app.api.routes_trace import router as trace_router
 from app.api.routes_email import router as email_router
+from app.api.routes_tracker import router as tracker_router
 from app.config import settings
 from app.core.clock import format_ist, to_ist, utcnow
 from app.core.database import async_session_factory, get_db, init_db
@@ -86,6 +87,7 @@ app.include_router(scraper_router)
 app.include_router(settings_router)
 app.include_router(trace_router)
 app.include_router(email_router)
+app.include_router(tracker_router)
 
 # Mount static files if present
 static_dir = Path(__file__).resolve().parent / "static"
@@ -370,6 +372,42 @@ async def job_detail_view(request: Request, job_id: int, db: AsyncSession = Depe
             "job": job_dict,
             "match_meta": match_meta,
             "linkedin_messages": linkedin_messages,
+            "csrf_token": getattr(request.state, "csrf_token", ""),
+        }
+    )
+
+@app.get("/tracker", response_class=HTMLResponse)
+async def tracker_view(request: Request, db: AsyncSession = Depends(get_db)):
+    stmt = select(JobPosting).order_by(desc(JobPosting.match_score), desc(JobPosting.discovered_at))
+    res = await db.execute(stmt)
+    jobs = res.scalars().all()
+
+    board = {
+        "discovered": [],
+        "applied": [],
+        "interviewing": [],
+        "offer": [],
+        "rejected": [],
+    }
+    for j in jobs:
+        st = (j.status or "new").lower()
+        jd = j.to_dict(include_description=False)
+        if st in ("applied",):
+            board["applied"].append(jd)
+        elif st in ("interviewing",):
+            board["interviewing"].append(jd)
+        elif st in ("offer",):
+            board["offer"].append(jd)
+        elif st in ("rejected", "archived", "withdrawn"):
+            board["rejected"].append(jd)
+        else:
+            board["discovered"].append(jd)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="tracker.html",
+        context={
+            "board": board,
             "csrf_token": getattr(request.state, "csrf_token", ""),
         }
     )

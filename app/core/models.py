@@ -28,7 +28,7 @@ class JobPosting(Base):
     match_reason = Column(Text, default="{}") # JSON metadata: matched_skills, missing_skills, reasoning
 
     # Workflow Status
-    status = Column(String(100), default="new", index=True) # new, reviewed, tailored, applied, rejected, archived
+    status = Column(String(100), default="new", index=True) # new, reviewed, tailored, applied, interviewing, offer, rejected, archived, withdrawn
     notified = Column(Boolean, default=False, index=True)
     notified_at = Column(UTCDateTime, nullable=True)
     notify_attempts = Column(Integer, default=0, nullable=False, index=True)
@@ -36,13 +36,24 @@ class JobPosting(Base):
     last_error = Column(String(500), nullable=True)
     tailor_status = Column(String(20), default="pending", nullable=False, index=True)
 
+    # Application Tracker (Kanban & Interviews)
+    applied_at = Column(UTCDateTime, nullable=True)
+    response_received_at = Column(UTCDateTime, nullable=True)
+    interview_stage = Column(String(100), default="none", nullable=False)
+    rejection_reason = Column(String(500), nullable=True)
+    notes = Column(Text, default="")
+
     # Relationships
     application = relationship("TailoredApplication", back_populates="job", uselist=False, cascade="all, delete-orphan", lazy="selectin")
+    interview_rounds = relationship("InterviewRound", back_populates="job", cascade="all, delete-orphan", lazy="selectin")
 
     def to_dict(self, include_description: bool = True):
         has_app = False
         if "application" in self.__dict__:
             has_app = self.__dict__["application"] is not None
+        rounds_list = []
+        if "interview_rounds" in self.__dict__ and self.__dict__["interview_rounds"]:
+            rounds_list = [r.to_dict() for r in self.__dict__["interview_rounds"]]
         data = {
             "id": self.id,
             "title": self.title,
@@ -71,6 +82,14 @@ class JobPosting(Base):
             "next_attempt_at_ist": format_ist(self.next_attempt_at) if self.next_attempt_at else None,
             "last_error": self.last_error,
             "tailor_status": self.tailor_status or "pending",
+            "applied_at": self.applied_at.isoformat() if self.applied_at else None,
+            "applied_at_ist": format_ist(self.applied_at) if self.applied_at else None,
+            "response_received_at": self.response_received_at.isoformat() if self.response_received_at else None,
+            "response_received_at_ist": format_ist(self.response_received_at) if self.response_received_at else None,
+            "interview_stage": self.interview_stage or "none",
+            "rejection_reason": self.rejection_reason,
+            "notes": self.notes or "",
+            "interview_rounds": rounds_list,
             "has_tailored_application": has_app
         }
         if include_description:
@@ -107,6 +126,40 @@ class TailoredApplication(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "created_at_ist": format_ist(self.created_at) if self.created_at else None
         }
+
+
+class InterviewRound(Base):
+    __tablename__ = "interview_rounds"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False, index=True)
+    round_number = Column(Integer, default=1, nullable=False)
+    round_type = Column(String(100), default="technical", nullable=False)
+    scheduled_at = Column(UTCDateTime, nullable=True)
+    completed_at = Column(UTCDateTime, nullable=True)
+    interviewer_name = Column(String(255), default="")
+    outcome = Column(String(50), default="pending")
+    notes = Column(Text, default="")
+    created_at = Column(UTCDateTime, default=utcnow, nullable=False)
+
+    job = relationship("JobPosting", back_populates="interview_rounds")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "job_id": self.job_id,
+            "round_number": self.round_number,
+            "round_type": self.round_type,
+            "scheduled_at": self.scheduled_at.isoformat() if self.scheduled_at else None,
+            "scheduled_at_ist": format_ist(self.scheduled_at) if self.scheduled_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at_ist": format_ist(self.completed_at) if self.completed_at else None,
+            "interviewer_name": self.interviewer_name or "",
+            "outcome": self.outcome or "pending",
+            "notes": self.notes or "",
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
