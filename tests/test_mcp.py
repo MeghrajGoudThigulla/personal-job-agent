@@ -87,9 +87,10 @@ async def test_mcp_protocol_lifecycle_and_tools_execution():
             "method": "tools/call",
             "params": {
                 "name": "search_jobs",
-                "arguments": {"min_score": 80, "limit": 5}
+                "arguments": {"query": "Orion Labs", "min_score": 80, "limit": 10}
             }
         }
+
         res_search = await ac.post("/api/mcp", json=search_call, headers=AUTH_HEADERS)
         assert res_search.status_code == 200
         search_content = json.loads(res_search.json()["result"]["content"][0]["text"])

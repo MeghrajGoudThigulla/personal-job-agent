@@ -140,6 +140,23 @@ async def get_market_skill_gaps(db: AsyncSession = Depends(get_db)) -> List[Dict
     return detector.aggregate_market_gaps(meta_list)
 
 
+@router.get("/api/digest/preview")
+async def preview_weekly_digest(days: int = 7, db: AsyncSession = Depends(get_db)):
+    from app.notifiers.weekly_digest import WeeklyDigestNotifier
+    notifier = WeeklyDigestNotifier()
+    data = await notifier.compile_digest_data(db, days=days)
+    text = notifier.format_telegram_digest(data)
+    return {"digest_summary": data, "text": text}
+
+
+@router.post("/api/digest/send")
+async def trigger_weekly_digest(days: int = 7, db: AsyncSession = Depends(get_db)):
+    from app.notifiers.weekly_digest import WeeklyDigestNotifier
+    notifier = WeeklyDigestNotifier()
+    return await notifier.dispatch_digest(db, days=days)
+
+
+
 @router.get("/analytics", response_class=HTMLResponse)
 async def analytics_page(request: Request, db: AsyncSession = Depends(get_db)):
     data = await get_analytics_funnel(db)

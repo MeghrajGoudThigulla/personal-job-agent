@@ -56,6 +56,21 @@ async def scheduled_digest_task():
         logger.error(f"Error during scheduled daily digest: {e}")
 
 
+async def scheduled_weekly_digest_task():
+    logger.info("Executing scheduled weekly job search & pipeline digest at 10:00 IST on Sunday...")
+    try:
+        from app.core.database import async_session_factory
+        from app.notifiers.weekly_digest import WeeklyDigestNotifier
+
+        async with async_session_factory() as session:
+            notifier = WeeklyDigestNotifier()
+            await notifier.dispatch_digest(session, days=7)
+    except Exception as e:
+        logger.error(f"Error during scheduled weekly digest: {e}")
+
+
+
+
 async def scheduled_email_monitor_task():
     has_creds = bool((settings.GMAIL_USER and settings.GMAIL_APP_PASSWORD) or (settings.OUTLOOK_USER and settings.OUTLOOK_APP_PASSWORD))
     if not settings.EMAIL_MONITOR_ENABLED and not has_creds:
@@ -127,6 +142,19 @@ def start_scheduler():
         id="daily_digest",
         replace_existing=True,
     )
+
+    # Schedule weekly executive digest every Sunday at 10:00 IST
+    scheduler.add_job(
+        scheduled_weekly_digest_task,
+        "cron",
+        day_of_week="sun",
+        hour=10,
+        minute=0,
+        timezone="Asia/Kolkata",
+        id="weekly_pipeline_digest",
+        replace_existing=True,
+    )
+
 
     # Schedule email monitor (Gmail & Outlook)
     if settings.EMAIL_MONITOR_ENABLED or (settings.GMAIL_USER and settings.GMAIL_APP_PASSWORD) or (settings.OUTLOOK_USER and settings.OUTLOOK_APP_PASSWORD):
