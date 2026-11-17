@@ -1,0 +1,116 @@
+name: 24/7 Autonomous Job Hunter & Daily Post Agent
+
+on:
+  schedule:
+    # Runs every 2 hours, 24/7 (UTC).
+    # In IST (UTC+5:30), this runs at:
+    # 05:30 AM, 07:30 AM, 09:30 AM (Daily LinkedIn post & morning hunt), 
+    # 11:30 AM, 01:30 PM, 03:30 PM, 05:30 PM, 07:30 PM, 09:30 PM, 11:30 PM IST.
+    - cron: '0 */2 * * *'
+
+  # Allows 1-click manual trigger anytime from GitHub web UI or mobile app
+  workflow_dispatch:
+    inputs:
+      cycle_mode:
+        description: 'Execution Mode'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'scrape_only'
+          - 'linkedin_only'
+          - 'email_only'
+      force_linkedin:
+        description: 'Force generate LinkedIn post regardless of current hour'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  hunt:
+    name: Execute Autonomous Hunt & Dispatch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Restore SQLite Database Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/jobs.db
+          key: job-agent-db-${{ github.run_id }}
+          restore-keys: |
+            job-agent-db-
+
+      - name: Run Autonomous Headless Cycle
+        env:
+          # --- Telegram Notifier Credentials ---
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+          # --- LLM Providers (At least one recommended for AI filtering & anti-slop posts) ---
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+          # --- Optional Email Monitor IMAP Credentials ---
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          OUTLOOK_USER: ${{ secrets.OUTLOOK_USER }}
+          OUTLOOK_APP_PASSWORD: ${{ secrets.OUTLOOK_APP_PASSWORD }}
+
+          # --- Optional Cloud Database (If using Supabase/Neon PostgreSQL instead of SQLite) ---
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+          # --- Core Application Security ---
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          ENV: "development"
+        run: |
+          MODE="${{ github.event.inputs.cycle_mode || 'all' }}"
+          FORCE_LI="${{ github.event.inputs.force_linkedin || 'false' }}"
+
+          CMD_ARGS=""
+          if [ "$MODE" = "scrape_only" ]; then
+            CMD_ARGS="--scrape-only"
+          elif [ "$MODE" = "linkedin_only" ]; then
+            CMD_ARGS="--linkedin-only"
+          elif [ "$MODE" = "email_only" ]; then
+            CMD_ARGS="--email-only"
+          fi
+
+          if [ "$FORCE_LI" = "true" ]; then
+            CMD_ARGS="$CMD_ARGS --force-linkedin"
+          fi
+
+          python scripts/run_headless_cycle.py $CMD_ARGS
+
+      - name: Save Updated SQLite Database Cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: data/jobs.db
+          key: job-agent-db-${{ github.run_id }}
+
+      - name: Upload Database Artifact (Backup)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jobs-database-backup
+          path: data/jobs.db
+          retention-days: 14
