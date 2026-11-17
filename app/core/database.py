@@ -69,6 +69,7 @@ async def init_db():
     try:
         async with engine.begin() as conn:
             await conn.run_sync(run_alembic_upgrade)
+        logging.getLogger().setLevel(logging.INFO)
     except OSError as e:
         if "Network is unreachable" in str(e) or getattr(e, "errno", None) == 101:
             logger.error(

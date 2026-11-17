@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import json
 import httpx
@@ -31,34 +32,31 @@ class DirectATSScraper(BaseScraper):
             "lever": ["netlify", "palantir", "courier"]
         }
 
+    async def _safe_fetch(self, coro, name: str) -> List[Dict[str, Any]]:
+        try:
+            return await asyncio.wait_for(coro, timeout=12.0)
+        except Exception as e:
+            logger.debug(f"ATS board {name} error/timeout: {e}")
+            return []
+
     async def scrape(self) -> List[Dict[str, Any]]:
-        jobs = []
-        async with httpx.AsyncClient(headers=self.DEFAULT_HEADERS, timeout=20.0, follow_redirects=True) as client:
-            # 1. Ashby Boards
+        jobs: List[Dict[str, Any]] = []
+        limits = httpx.Limits(max_keepalive_connections=10, max_connections=20)
+        async with httpx.AsyncClient(headers=self.DEFAULT_HEADERS, timeout=12.0, limits=limits, follow_redirects=True) as client:
+            tasks = []
             for board in self.boards.get("ashby", []):
-                try:
-                    ashby_jobs = await self._scrape_ashby(client, board)
-                    jobs.extend(ashby_jobs)
-                except Exception as e:
-                    logger.debug(f"Ashby board {board} error: {e}")
-
-            # 2. Greenhouse Boards
+                tasks.append(self._safe_fetch(self._scrape_ashby(client, board), f"ashby:{board}"))
             for board in self.boards.get("greenhouse", []):
-                try:
-                    gh_jobs = await self._scrape_greenhouse(client, board)
-                    jobs.extend(gh_jobs)
-                except Exception as e:
-                    logger.debug(f"Greenhouse board {board} error: {e}")
-
-            # 3. Lever Boards
+                tasks.append(self._safe_fetch(self._scrape_greenhouse(client, board), f"greenhouse:{board}"))
             for board in self.boards.get("lever", []):
-                try:
-                    lever_jobs = await self._scrape_lever(client, board)
-                    jobs.extend(lever_jobs)
-                except Exception as e:
-                    logger.debug(f"Lever board {board} error: {e}")
+                tasks.append(self._safe_fetch(self._scrape_lever(client, board), f"lever:{board}"))
 
-        logger.info(f"DirectATSScraper discovered {len(jobs)} total postings.")
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for res in results:
+                if isinstance(res, list):
+                    jobs.extend(res)
+
+        logger.info(f"DirectATSScraper discovered {len(jobs)} total postings across {len(tasks)} boards.")
         return jobs
 
     async def _scrape_ashby(self, client: httpx.AsyncClient, board: str) -> List[Dict[str, Any]]:
@@ -69,7 +67,7 @@ class DirectATSScraper(BaseScraper):
         data = res.json()
         results = []
         company_name = board.capitalize()
-        for j in data.get("jobs", []):
+        for j in data.get("jobs", [])[:40]:
             title = j.get("title", "")
             location = j.get("location") or "Unknown"
             is_remote = j.get("isRemote", False)
@@ -95,7 +93,7 @@ class DirectATSScraper(BaseScraper):
         data = res.json()
         results = []
         company_name = board.capitalize()
-        for j in data.get("jobs", []):
+        for j in data.get("jobs", [])[:40]:
             title = j.get("title", "")
             loc = j.get("location", {}).get("name", "Unknown")
             job_url = j.get("absolute_url", "")
@@ -120,7 +118,7 @@ class DirectATSScraper(BaseScraper):
         data = res.json()
         results = []
         company_name = board.capitalize()
-        for j in data:
+        for j in data[:40]:
             title = j.get("text", "")
             cats = j.get("categories", {})
             loc = cats.get("location", "Unknown")

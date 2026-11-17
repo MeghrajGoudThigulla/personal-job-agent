@@ -28,7 +28,7 @@ async def test_compile_and_format_weekly_digest():
             location="Remote, India",
             url=f"https://solana.example/jobs/{uid}-1",
             source_platform="Ashby",
-            match_score=96.0,
+            match_score=999.0,
             status="interviewing",
             interview_stage="Round 2 (System Design)",
             match_reason='{"matched_skills": ["Python", "Docker"], "missing_skills": ["Kubernetes", "Rust"]}'

@@ -31,7 +31,7 @@ jobs:
   hunt:
     name: Execute Autonomous Hunt & Dispatch
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout Repository
@@ -58,6 +58,8 @@ jobs:
 
       - name: Run Autonomous Headless Cycle
         env:
+          PYTHONUNBUFFERED: "1"
+
           # --- Telegram Notifier Credentials ---
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -82,6 +84,7 @@ jobs:
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
           ENV: "development"
         run: |
+          mkdir -p data data/tailored_resumes
           MODE="${{ github.event.inputs.cycle_mode || 'all' }}"
           FORCE_LI="${{ github.event.inputs.force_linkedin || 'false' }}"
 
@@ -98,19 +101,20 @@ jobs:
             CMD_ARGS="$CMD_ARGS --force-linkedin"
           fi
 
-          python scripts/run_headless_cycle.py $CMD_ARGS
+          python -u scripts/run_headless_cycle.py $CMD_ARGS
 
       - name: Save Updated SQLite Database Cache
         uses: actions/cache/save@v4
-        if: always()
+        if: always() && hashFiles('data/jobs.db') != ''
         with:
           path: data/jobs.db
           key: job-agent-db-${{ github.run_id }}
 
       - name: Upload Database Artifact (Backup)
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && hashFiles('data/jobs.db') != ''
         with:
           name: jobs-database-backup
           path: data/jobs.db
           retention-days: 14
+          if-no-files-found: ignore

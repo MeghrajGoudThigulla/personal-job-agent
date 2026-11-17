@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import httpx
 from typing import List, Dict, Any
@@ -17,36 +18,27 @@ class RemoteBoardsScraper(BaseScraper):
     def __init__(self):
         super().__init__("RemoteBoardsScraper")
 
+    async def _safe_fetch(self, coro, name: str) -> List[Dict[str, Any]]:
+        try:
+            return await asyncio.wait_for(coro, timeout=10.0)
+        except Exception as e:
+            logger.debug(f"Remote board {name} error/timeout: {e}")
+            return []
+
     async def scrape(self) -> List[Dict[str, Any]]:
-        jobs = []
-        async with httpx.AsyncClient(headers=self.DEFAULT_HEADERS, timeout=20.0, follow_redirects=True) as client:
-            # 1. Jobicy
-            try:
-                jobicy_jobs = await self._scrape_jobicy(client)
-                jobs.extend(jobicy_jobs)
-            except Exception as e:
-                logger.debug(f"Jobicy scrape error: {e}")
-
-            # 2. RemoteOK
-            try:
-                remoteok_jobs = await self._scrape_remoteok(client)
-                jobs.extend(remoteok_jobs)
-            except Exception as e:
-                logger.debug(f"RemoteOK scrape error: {e}")
-
-            # 3. Remotive
-            try:
-                remotive_jobs = await self._scrape_remotive(client)
-                jobs.extend(remotive_jobs)
-            except Exception as e:
-                logger.debug(f"Remotive scrape error: {e}")
-
-            # 4. Arbeitnow
-            try:
-                arbeitnow_jobs = await self._scrape_arbeitnow(client)
-                jobs.extend(arbeitnow_jobs)
-            except Exception as e:
-                logger.debug(f"Arbeitnow scrape error: {e}")
+        jobs: List[Dict[str, Any]] = []
+        limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
+        async with httpx.AsyncClient(headers=self.DEFAULT_HEADERS, timeout=10.0, limits=limits, follow_redirects=True) as client:
+            tasks = [
+                self._safe_fetch(self._scrape_jobicy(client), "Jobicy"),
+                self._safe_fetch(self._scrape_remoteok(client), "RemoteOK"),
+                self._safe_fetch(self._scrape_remotive(client), "Remotive"),
+                self._safe_fetch(self._scrape_arbeitnow(client), "Arbeitnow"),
+            ]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for res in results:
+                if isinstance(res, list):
+                    jobs.extend(res)
 
         logger.info(f"RemoteBoardsScraper discovered {len(jobs)} postings.")
         return jobs

@@ -49,7 +49,7 @@ class JobSpyScraper(BaseScraper):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120.0)
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=35.0)
 
             if proc.returncode != 0:
                 err_msg = stderr.decode("utf-8", errors="replace").strip()
@@ -64,7 +64,7 @@ class JobSpyScraper(BaseScraper):
             logger.info(f"JobSpyScraper extracted {len(jobs)} jobs via isolated subprocess.")
             return jobs
         except asyncio.TimeoutError:
-            logger.warning("JobSpy subprocess timed out after 120s; terminating process.")
+            logger.warning("JobSpy subprocess timed out after 35s; terminating process.")
             try:
                 proc.kill()
                 await proc.wait()

@@ -92,7 +92,10 @@ class ScraperEngine:
             # Phase 1: Ingest scraper-by-scraper, deduplicate, evaluate STAIR score, and commit immediately
             for scraper in active_scrapers:
                 try:
-                    items = await scraper.scrape()
+                    items = await asyncio.wait_for(scraper.scrape(), timeout=35.0)
+                except asyncio.TimeoutError:
+                    logger.warning(f"Scraper {scraper.name} timed out after 35s. Proceeding.")
+                    continue
                 except Exception as e:
                     logger.error(f"Scraper {scraper.name} failed: {e}")
                     continue
@@ -102,10 +105,71 @@ class ScraperEngine:
 
                 total_scraped += len(items)
 
+                # Fast pre-filtering in memory
+                candidate_items = []
+                batch_hashes = set()
+                batch_fps = set()
+                batch_item_urls = set()
+
+                for item in items:
+                    url = item.get("url")
+                    if not url or url in batch_urls or url in batch_item_urls:
+                        continue
+                    fp = compute_fingerprint(
+                        company=item.get("company", ""),
+                        title=item.get("title", ""),
+                        location=item.get("location", "")
+                    )
+                    if fp in batch_fingerprints or fp in batch_fps:
+                        continue
+                    url_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()
+                    batch_hashes.add(url_hash)
+                    batch_fps.add(fp)
+                    batch_item_urls.add(url)
+                    candidate_items.append((item, url, url_hash, fp))
+
+                if not candidate_items:
+                    continue
+
+                # Batch lookup seen_jobs & existing jobs in single round-trip queries
                 async with async_session_factory() as session:
-                    for item in items:
-                        url = item.get("url")
-                        if not url or url in batch_urls:
+                    seen_hashes = set()
+                    seen_fps = set()
+                    if batch_hashes:
+                        seen_res = await session.execute(
+                            select(SeenJob.url_hash, SeenJob.fingerprint).where(
+                                (SeenJob.url_hash.in_(batch_hashes)) | (SeenJob.fingerprint.in_(batch_fps))
+                            )
+                        )
+                        for sh, sfp in seen_res.all():
+                            if sh:
+                                seen_hashes.add(sh)
+                            if sfp:
+                                seen_fps.add(sfp)
+
+                    existing_urls = set()
+                    existing_fps = set()
+                    if batch_item_urls:
+                        job_res = await session.execute(
+                            select(JobPosting.url, JobPosting.fingerprint).where(
+                                (JobPosting.url.in_(batch_item_urls)) | (JobPosting.fingerprint.in_(batch_fps))
+                            )
+                        )
+                        for ju, jfp in job_res.all():
+                            if ju:
+                                existing_urls.add(ju)
+                            if jfp:
+                                existing_fps.add(jfp)
+
+                    for item, url, url_hash, fp in candidate_items:
+                        if url_hash in seen_hashes or fp in seen_fps:
+                            batch_urls.add(url)
+                            batch_fingerprints.add(fp)
+                            continue
+
+                        if url in existing_urls or fp in existing_fps:
+                            batch_urls.add(url)
+                            batch_fingerprints.add(fp)
                             continue
 
                         # Prompt injection defense and cleaning at ingest
@@ -120,40 +184,7 @@ class ScraperEngine:
                         if len(clean_desc) > 8000:
                             clean_desc = clean_desc[:8000]
 
-                        url_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()
-
-                        fp = compute_fingerprint(
-                            company=item.get("company", ""),
-                            title=item.get("title", ""),
-                            location=item.get("location", "")
-                        )
-                        if fp in batch_fingerprints:
-                            continue
-
                         now = utcnow()
-
-                        # 1. Check seen_jobs table (persistent dedup memory that survives retention purges)
-                        seen_stmt = select(SeenJob).where(
-                            (SeenJob.url_hash == url_hash) | (SeenJob.fingerprint == fp)
-                        )
-                        matched_seen = (await session.execute(seen_stmt)).scalars().all()
-                        if matched_seen:
-                            for s in matched_seen:
-                                s.last_seen_at = now
-                            batch_urls.add(url)
-                            batch_fingerprints.add(fp)
-                            continue
-
-                        # 2. Check jobs table (exact URL or exact fingerprint)
-                        existing_job_res = await session.execute(
-                            select(JobPosting.id).where(
-                                (JobPosting.url == url) | (JobPosting.fingerprint == fp)
-                            ).limit(1)
-                        )
-                        if existing_job_res.scalars().first() is not None:
-                            batch_urls.add(url)
-                            batch_fingerprints.add(fp)
-                            continue
 
                         # Freshness Gate: Parse posted_date and verify age <= MAX_JOB_AGE_DAYS
                         raw_posted_date = item.get("posted_date")

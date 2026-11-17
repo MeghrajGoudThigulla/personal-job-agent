@@ -40,12 +40,16 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 
 async def run_discovery_step() -> dict:
-    """Executes the complete job discovery, matching, and notification cycle."""
+    """Executes the complete job discovery, matching, and notification cycle with a 3-minute safety timeout."""
     logger.info("=== STEP 1: Starting autonomous job discovery cycle ===")
     engine = ScraperEngine()
-    result = await engine.run_discovery_cycle()
-    logger.info(f"Discovery cycle finished: {result}")
-    return result
+    try:
+        result = await asyncio.wait_for(engine.run_discovery_cycle(), timeout=180.0)
+        logger.info(f"Discovery cycle finished: {result}")
+        return result
+    except asyncio.TimeoutError:
+        logger.warning("Discovery cycle reached 180s timeout limit; gracefully proceeding with current results.")
+        return {"status": "timeout", "message": "Circuit breaker hit at 180s"}
 
 
 async def run_linkedin_step(force: bool = False) -> None:
@@ -171,6 +175,9 @@ async def main() -> None:
 
     logger.info("Initializing database and models...")
     await init_db()
+    logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger("personal_job_agent").setLevel(logging.INFO)
+    logger.info("Database and migrations initialized.")
 
     if args.linkedin_only:
         await run_linkedin_step(force=True)
